@@ -60,25 +60,33 @@ def load_models():
         model="Helsinki-NLP/opus-mt-hi-en"
     )
 
-    return processor, asr_model, summarizer, translator_en_hi, translator_hi_en
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    asr_model = asr_model.to(device)
+
+    return processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device
 
 
-processor, asr_model, summarizer, translator_en_hi, translator_hi_en = load_models()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-asr_model.to(device)
+def get_models():
+    if "models" not in st.session_state:
+        with st.spinner("Loading AI models..."):
+            st.session_state.models = load_models()
+    return st.session_state.models
+
 
 # ---------- HELPERS ----------
 def is_hindi(text):
     return any('\u0900' <= ch <= '\u097F' for ch in text)
 
-def get_output_text(text):
+
+def get_output_text(text, translator_en_hi, translator_hi_en):
     if language_option == "English":
         return translator_hi_en(text)[0]["translation_text"] if is_hindi(text) else text
     else:
         return translator_en_hi(text)[0]["translation_text"] if not is_hindi(text) else text
 
+
 # ---------- TRANSCRIPTION ----------
-def transcribe_audio(audio_file):
+def transcribe_audio(audio_file, processor, asr_model, device):
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(audio_file.read())
         path = tmp.name
@@ -111,12 +119,14 @@ def transcribe_audio(audio_file):
 
     return " ".join(transcripts)
 
+
 # ---------- PDF ----------
 def create_pdf(text, title, filename):
     c = canvas.Canvas(filename, pagesize=letter)
     c.setFont("Helvetica-Bold", 16)
     c.drawString(100, 750, title)
     c.setFont("Helvetica", 12)
+
     y = 720
     for line in text.split(". "):
         if y < 100:
@@ -125,8 +135,10 @@ def create_pdf(text, title, filename):
             y = 750
         c.drawString(100, y, line.strip())
         y -= 18
+
     c.save()
     return filename
+
 
 # ---------- SESSION STATE ----------
 st.session_state.setdefault("transcript", "")
@@ -143,12 +155,22 @@ with tabs[0]:
     )
 
     if uploaded_file:
+        processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device = get_models()
+
         with st.spinner("Transcribing full audio..."):
-            st.session_state.transcript = transcribe_audio(uploaded_file)
+            st.session_state.transcript = transcribe_audio(
+                uploaded_file, processor, asr_model, device
+            )
             st.session_state.summary = ""
 
     if st.session_state.transcript:
-        final_text = get_output_text(st.session_state.transcript)
+        processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device = get_models()
+
+        final_text = get_output_text(
+            st.session_state.transcript,
+            translator_en_hi,
+            translator_hi_en
+        )
 
         st.text_area(
             f"🗒️ Transcript ({language_option})",
@@ -165,17 +187,23 @@ with tabs[1]:
     if not st.session_state.transcript:
         st.info("Upload audio in Home tab first.")
     else:
+        processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device = get_models()
+
         if st.button("📚 Generate Summary"):
             with st.spinner("Summarizing..."):
                 st.session_state.summary = summarizer(
                     st.session_state.transcript[:2000],
-                    max_length=500,
+                    max_length=300,
                     min_length=100,
                     do_sample=False
                 )[0]["summary_text"]
 
         if st.session_state.summary:
-            final_summary = get_output_text(st.session_state.summary)
+            final_summary = get_output_text(
+                st.session_state.summary,
+                translator_en_hi,
+                translator_hi_en
+            )
 
             st.text_area(
                 f"📘 Summary ({language_option})",
@@ -189,4 +217,7 @@ with tabs[1]:
 
 # ---------- FOOTER ----------
 st.markdown("---")
-st.markdown("<center style='color:gray;'>© 2025 Sanjana Krishnan • LectNotes AI</center>", unsafe_allow_html=True)
+st.markdown(
+    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LectNotes AI</center>",
+    unsafe_allow_html=True
+)
