@@ -9,6 +9,7 @@ from reportlab.pdfgen import canvas
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="🎧 LectNotes AI", layout="wide")
 
+# ---------- HEADER ----------
 st.markdown("""
 <div style="
     background: linear-gradient(90deg,#00C4FF,#0066FF);
@@ -38,6 +39,9 @@ language_option = st.sidebar.radio(
 
 st.sidebar.info("Welcome to your smart lecture companion ✨")
 
+# ---------- MODEL LOADING MESSAGE ----------
+st.info("⏳ Loading AI models... First run may take a few minutes.")
+
 # ---------- LOAD MODELS ----------
 @st.cache_resource
 def load_models():
@@ -57,7 +61,8 @@ def load_models():
     return processor, asr_model, summarizer, translator_hi
 
 
-processor, asr_model, summarizer, translator_hi = load_models()
+with st.spinner("🔄 Initializing AI models..."):
+    processor, asr_model, summarizer, translator_hi = load_models()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 asr_model = asr_model.to(device)
@@ -226,6 +231,6 @@ with tabs[1]:
 # ---------- FOOTER ----------
 st.markdown("---")
 st.markdown(
-    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LectNotes AI /center>",
+    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LectNotes AI</center>",
     unsafe_allow_html=True
 )
