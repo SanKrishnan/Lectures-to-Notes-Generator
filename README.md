@@ -1,4 +1,4 @@
-###🎧 LectNotes AI
+### 🎧 LectNotes AI
 Smart Lecture Assistant for Audio-to-Notes & Summaries
 LectNotes AI is an AI-powered web application that transforms lecture audio into structured text notes, concise summaries, and Hindi translations. Perfect for students, educators, and multilingual learners seeking efficient lecture note automation.
 
@@ -50,7 +50,6 @@ Run the application
 
 bash
 streamlit run app.py
-Open http://localhost:8501 in your browser.
 
 📋 Usage Workflow
 Upload your lecture audio file (MP3, WAV, M4A supported)
