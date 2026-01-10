@@ -6,3 +6,4 @@ soundfile
 reportlab
 sentencepiece
 indic-transliteration
+sacremoses
