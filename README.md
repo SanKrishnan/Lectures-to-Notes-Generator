@@ -1,6 +1,4 @@
-Here's a polished and comprehensive README file for your LectNotes AI project.
-
-🎧 LectNotes AI
+###🎧 LectNotes AI
 Smart Lecture Assistant for Audio-to-Notes & Summaries
 LectNotes AI is an AI-powered web application that transforms lecture audio into structured text notes, concise summaries, and Hindi translations. Perfect for students, educators, and multilingual learners seeking efficient lecture note automation.
 
