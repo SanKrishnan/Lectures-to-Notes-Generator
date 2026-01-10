@@ -165,16 +165,13 @@ with tab_home:
             )
 
 # ---------- SUMMARY ----------
-# ---------- SUMMARY ----------
-with tabs[1]:
+with tab_summary:
     if not st.session_state.transcript:
         st.info("Upload audio in Home tab first.")
     else:
         processor, asr_model, summarizer, device = get_models()
 
         if st.button("📚 Generate Summary"):
-            st.session_state.summary = ""
-
             with st.spinner("Generating summary..."):
                 st.session_state.summary = summarizer(
                     st.session_state.transcript[:2000],
@@ -202,7 +199,7 @@ with tabs[1]:
                     f,
                     "lecture_summary.pdf"
                 )
-
+                
 # ---------- FOOTER ----------
 st.markdown("---")
 st.markdown(
