@@ -1,8 +1,7 @@
-streamlit>=1.32.0
-torch
+streamlit==1.32.2
+torch==2.0.1
 transformers==4.37.2
-librosa
+librosa==0.10.1
 soundfile
 reportlab
 sentencepiece
-sacremoses
