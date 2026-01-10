@@ -14,8 +14,6 @@ st.markdown("<h2 style='text-align:center;color:#00C4FF;'>EduNote AI - Smart Lec
 st.markdown("<p style='text-align:center;'>Convert Lectures ➜ Summaries ➜ Quizzes ➜ Insights</p>", unsafe_allow_html=True)
 
 # ---------- SIDEBAR (User Profile) ----------
-if os.path.exists("assets/logo.png"):
-    st.sidebar.image("assets/logo.png", width=120)
 st.sidebar.header("👤 User Profile")
 user_name = st.sidebar.text_input("Name", placeholder="Enter your full name")
 user_email = st.sidebar.text_input("Email", placeholder="Enter your email")
