@@ -2,7 +2,6 @@ streamlit
 torch
 transformers
 librosa
+soundfile
 reportlab
 sentencepiece
-soundfile
-numpy
