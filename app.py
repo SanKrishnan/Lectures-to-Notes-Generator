@@ -165,27 +165,25 @@ with tab_home:
             )
 
 # ---------- SUMMARY ----------
-with tab_summary:
+# ---------- SUMMARY ----------
+with tabs[1]:
     if not st.session_state.transcript:
         st.info("Upload audio in Home tab first.")
     else:
         processor, asr_model, summarizer, device = get_models()
 
-        # Button only sets state
         if st.button("📚 Generate Summary"):
-            st.session_state.generate_summary = True
+            st.session_state.summary = ""
 
-        # Actual summary logic
-        if st.session_state.generate_summary:
-            if not st.session_state.summary:
-                with st.spinner("Generating summary..."):
-                    st.session_state.summary = summarizer(
-                        st.session_state.transcript[:2000],
-                        max_length=250,
-                        min_length=100,
-                        do_sample=False
-                    )[0]["summary_text"]
+            with st.spinner("Generating summary..."):
+                st.session_state.summary = summarizer(
+                    st.session_state.transcript[:2000],
+                    max_length=250,
+                    min_length=100,
+                    do_sample=False
+                )[0]["summary_text"]
 
+        if st.session_state.summary:
             st.text_area(
                 "📘 Summary",
                 st.session_state.summary,
