@@ -5,19 +5,17 @@ import librosa
 from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-import google.generativeai as genai
+import os
+
 
 # ---------- CONFIG ----------
-st.set_page_config(page_title="🎧 AI Lecture Assistant", layout="wide")
-st.markdown("<h2 style='text-align:center;color:#00C4FF;'>AI Lecture Assistant</h2>", unsafe_allow_html=True)
+st.set_page_config(page_title="🎧 EduNote AI", layout="wide")
+st.markdown("<h2 style='text-align:center;color:#00C4FF;'>EduNote AI - Smart Lecture Assistant</h2>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center;'>Convert Lectures ➜ Summaries ➜ Quizzes ➜ Insights</p>", unsafe_allow_html=True)
 
-# ---------- GEMINI CONFIG ----------
-genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-model = genai.GenerativeModel("gemini-2.5-pro")
-
 # ---------- SIDEBAR (User Profile) ----------
-st.sidebar.image("assets/logo.png", width=120)
+if os.path.exists("assets/logo.png"):
+    st.sidebar.image("assets/logo.png", width=120)
 st.sidebar.header("👤 User Profile")
 user_name = st.sidebar.text_input("Name", placeholder="Enter your full name")
 user_email = st.sidebar.text_input("Email", placeholder="Enter your email")
@@ -61,7 +59,7 @@ st.markdown("""
 def load_models():
     processor = WhisperProcessor.from_pretrained("openai/whisper-small")
     asr_model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
-    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
     return processor, asr_model, summarizer
 
 processor, asr_model, summarizer = load_models()
@@ -84,14 +82,11 @@ def summarize_text(text):
     return summarizer(text, max_length=150, min_length=50, do_sample=False)[0]["summary_text"]
 
 def generate_quiz(context):
-    prompt = f"Create 5 multiple-choice quiz questions with options (A-D) from the following lecture:\n\n{context}"
-    response = model.generate_content(prompt)
-    return response.text
+    return "⚠️ Quiz generation is disabled in this cloud prototype."
 
 def ask_gemini(question, context):
-    prompt = f"Context: {context}\nQuestion: {question}\nAnswer concisely."
-    response = model.generate_content(prompt)
-    return response.text
+    return "⚠️ Q&A feature is disabled in this deployment."
+
 
 def create_pdf(content_text, title="Lecture Notes", filename="lecture_notes.pdf"):
     """
@@ -190,17 +185,28 @@ with tabs[0]:
 
 # ---------- SUMMARIZE TAB ----------
 with tabs[1]:
+    summary_length = st.slider(
+        "Select Summary Length",
+        min_value=50,
+        max_value=300,
+        value=150
+    )
+
     if st.session_state.transcript:
         if not st.session_state.summary:
             if st.button("📚 Generate Summary"):
                 with st.spinner("Summarizing..."):
-                    st.session_state.summary = summarize_text(st.session_state.transcript)
+                    st.session_state.summary = summarizer(
+                        st.session_state.transcript,
+                        max_length=summary_length,
+                        min_length=summary_length // 2,
+                        do_sample=False
+                    )[0]["summary_text"]
 
         if st.session_state.summary:
             st.success("✅ Summary Ready!")
             st.text_area("📘 Summary", st.session_state.summary, height=250)
 
-            # ✅ Generate Summary PDF
             summary_pdf = create_pdf(
                 st.session_state.summary,
                 title="Lecture Summary",
@@ -215,7 +221,6 @@ with tabs[1]:
                 )
     else:
         st.warning("Upload and transcribe audio first from Home tab.")
-
 
 # ---------- QUIZ TAB ----------
 with tabs[2]:
@@ -261,5 +266,6 @@ with tabs[3]:
         st.warning("Upload and transcribe audio first from Home tab.")
 
 st.markdown("---")
-st.caption("© 2025 AyushKumar Sharma | Design by AyushKumar Sharma")
-st.caption("⚡ Built with Streamlit + Whisper + BART + Gemini AI")
+st.caption("© 2025 Sanjana Krishnan | Academic Prototype")
+st.caption("⚡ Built with Streamlit + Whisper + Transformers")
+
