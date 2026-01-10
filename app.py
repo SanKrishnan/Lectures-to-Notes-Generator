@@ -5,6 +5,8 @@ import librosa
 from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import os
+PORT = int(os.environ.get("PORT", 8501))
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="🎧 LectNotes AI", layout="wide")
