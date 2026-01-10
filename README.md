@@ -47,7 +47,6 @@ LectNotes AI is an AI-powered web application that converts lecture audio into s
 ---
 
 ## 📁 **Project Structure**
-
 LectNotes-AI/
 │
 ├── app.py
@@ -56,26 +55,27 @@ LectNotes-AI/
 ├── .gitignore
 └── LICENSE
 
-yaml
-Copy code
-
 ---
-
-## ⚙️ **How to Run Locally**
-
 ### 1️⃣ Clone the Repository
 ```bash
 git clone https://github.com/your-username/LectNotes-AI.git
 cd LectNotes-AI
+```
+
 2️⃣ Install Dependencies
-bash
+```bash
 Copy code
 pip install -r requirements.txt
+```
+
 3️⃣ Run the Application
-bash
+```bash
 Copy code
 streamlit run app.py
+```
+
 🌍 Deployment
+
 LectNotes AI can be deployed using Streamlit Community Cloud:
 
 Push the project to GitHub
@@ -88,7 +88,9 @@ Select app.py as the main file
 
 Click Deploy
 
+
 🎓 Academic Use Case
+
 This project is suitable for:
 
 AI & Data Science coursework
@@ -99,14 +101,18 @@ Multilingual education support
 
 Speech and NLP-based academic applications
 
+
 ⚠️ Limitations
+
 Translation accuracy may vary for technical terms
 
 Large audio files may take longer to process
 
 Internet connection required for model loading
 
+
 🔮 Future Enhancements
+
 Quiz generation from lecture content
 
 Support for additional languages
@@ -115,10 +121,12 @@ Keyword extraction and highlights
 
 Improved formatting for generated PDFs
 
+
 👩‍💻 Author
+
 Sanjana Krishnan
-Computer Science Engineering Student
-Academic Project – 2025
+
 
 📜 License
+
 This project is licensed under the MIT License and is intended for academic and educational use.
