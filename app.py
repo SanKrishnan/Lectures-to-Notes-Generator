@@ -7,11 +7,14 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import os
 
+from indic_transliteration import sanscript
+from indic_transliteration.sanscript import transliterate
+
 # ---------------- CONFIG ----------------
 PORT = int(os.environ.get("PORT", 8501))
 SAMPLE_RATE = 16000
-MAX_AUDIO_SECONDS = 300          # 5 minutes max
-CHUNK_SECONDS = 30               # 30 sec chunks
+MAX_AUDIO_SECONDS = 300     
+CHUNK_SECONDS = 30          
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "openai/whisper-tiny")
 
 torch.set_num_threads(2)
@@ -41,12 +44,12 @@ st.sidebar.selectbox("Role", ["Student", "Teacher", "Other"])
 st.sidebar.text_area("Notes / Remarks", height=80)
 st.sidebar.markdown("---")
 
-language_option = st.sidebar.radio(
-    "🌐 Select Output Language",
-    ["English", "Hindi"]
+output_mode = st.sidebar.radio(
+    "📝 Output Mode",
+    ["Original", "Hinglish (Hindi only)"]
 )
 
-st.sidebar.info("Welcome to your smart lecture companion ✨")
+st.sidebar.info("English → English | Hindi → Hindi / Hinglish")
 
 # ---------- MODEL LOADING ----------
 st.info("⏳ Loading AI models... First run may take a few minutes.")
@@ -61,33 +64,37 @@ def load_models():
         model="sshleifer/distilbart-cnn-12-6"
     )
 
-    translator_hi = pipeline(
-        "translation_en_to_hi",
-        model="Helsinki-NLP/opus-mt-en-hi"
-    )
-
-    return processor, asr_model, summarizer, translator_hi
+    return processor, asr_model, summarizer
 
 with st.spinner("🔄 Initializing AI models..."):
-    processor, asr_model, summarizer, translator_hi = load_models()
+    processor, asr_model, summarizer = load_models()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 asr_model = asr_model.to(device)
 
-# ---------- FUNCTIONS ----------
+# ---------- HELPER FUNCTIONS ----------
+
+def is_hindi(text):
+    return any('\u0900' <= ch <= '\u097F' for ch in text)
+
+def hindi_to_hinglish(text):
+    try:
+        return transliterate(text, sanscript.DEVANAGARI, sanscript.ITRANS)
+    except:
+        return text
+
+# ---------- TRANSCRIPTION FUNCTION ----------
 
 def transcribe_audio(audio_file):
-    # Save uploaded file (mp3 or wav)
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(audio_file.read())
         path = tmp.name
 
-    # librosa handles mp3 + wav automatically
+    # Load mp3 / wav
     speech, _ = librosa.load(path, sr=SAMPLE_RATE, mono=True)
 
-    # Limit duration
-    max_samples = SAMPLE_RATE * MAX_AUDIO_SECONDS
-    speech = speech[:max_samples]
+    # Limit length
+    speech = speech[: SAMPLE_RATE * MAX_AUDIO_SECONDS]
 
     chunk_size = SAMPLE_RATE * CHUNK_SECONDS
     transcripts = []
@@ -109,6 +116,7 @@ def transcribe_audio(audio_file):
         with torch.no_grad():
             ids = asr_model.generate(
                 **inputs,
+                task="transcribe",
                 max_new_tokens=128
             )
 
@@ -122,10 +130,7 @@ def transcribe_audio(audio_file):
 
     return " ".join(transcripts)
 
-
-def translate_to_hindi(text):
-    return translator_hi(text)[0]["translation_text"]
-
+# ---------- PDF FUNCTION ----------
 
 def create_pdf(text, title, filename):
     c = canvas.Canvas(filename, pagesize=letter)
@@ -169,27 +174,18 @@ with tabs[0]:
             st.stop()
 
     if st.session_state.transcript:
-        with st.expander("🗒️ View Transcript"):
+        text = st.session_state.transcript
+
+        st.text_area("🗒️ Transcript", text, height=220)
+
+        if output_mode == "Hinglish (Hindi only)" and is_hindi(text):
             st.text_area(
-                "Transcript",
-                st.session_state.transcript,
+                "🗒️ Transcript (Hinglish)",
+                hindi_to_hinglish(text),
                 height=220
             )
 
-        if language_option == "Hindi":
-            with st.expander("🗒️ View Transcript (Hindi)"):
-                st.text_area(
-                    "Transcript (Hindi)",
-                    translate_to_hindi(st.session_state.transcript),
-                    height=220
-                )
-
-        pdf = create_pdf(
-            st.session_state.transcript,
-            "Lecture Transcript",
-            "lecture_transcript.pdf"
-        )
-
+        pdf = create_pdf(text, "Lecture Transcript", "lecture_transcript.pdf")
         with open(pdf, "rb") as f:
             st.download_button(
                 "⬇️ Download Transcript (PDF)",
@@ -203,10 +199,7 @@ with tabs[0]:
 
 # ---------- SUMMARY TAB ----------
 with tabs[1]:
-    summary_length = st.slider(
-        "Select Summary Length",
-        50, 300, 150
-    )
+    summary_length = st.slider("Select Summary Length", 50, 300, 150)
 
     if st.session_state.transcript:
         if st.button("📚 Generate Summary"):
@@ -219,18 +212,7 @@ with tabs[1]:
                 )[0]["summary_text"]
 
     if st.session_state.summary:
-        st.text_area(
-            "📘 Summary",
-            st.session_state.summary,
-            height=220
-        )
-
-        if language_option == "Hindi":
-            st.text_area(
-                "📘 Summary (Hindi)",
-                translate_to_hindi(st.session_state.summary),
-                height=220
-            )
+        st.text_area("📘 Summary", st.session_state.summary, height=220)
 
         pdf = create_pdf(
             st.session_state.summary,
