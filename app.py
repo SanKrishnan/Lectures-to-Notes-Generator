@@ -6,6 +6,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import os
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 # ---------------- CONFIG ----------------
 SAMPLE_RATE = 16000
 MAX_AUDIO_SECONDS = 300
