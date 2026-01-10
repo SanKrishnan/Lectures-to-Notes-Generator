@@ -2,30 +2,26 @@ import streamlit as st
 import tempfile
 import torch
 import librosa
+from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import os
-
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-# ---------------- CONFIG ----------------
-SAMPLE_RATE = 16000
-MAX_AUDIO_SECONDS = 300
-CHUNK_SECONDS = 30
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "openai/whisper-tiny")
-
-torch.set_num_threads(2)
+PORT = int(os.environ.get("PORT", 8501))
 
 # ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="🎧 LetUNote AI", layout="wide")
+st.set_page_config(page_title="🎧 LectNotes AI", layout="wide")
 
 # ---------- HEADER ----------
 st.markdown("""
-<div style="background: linear-gradient(90deg,#00C4FF,#0066FF);
-padding:20px;border-radius:12px;text-align:center;color:white;">
-<h2>LetUNote AI</h2>
-<p>Smart Lecture Assistant for Notes & Summaries</p>
+<div style="
+    background: linear-gradient(90deg,#00C4FF,#0066FF);
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+    color:white;
+">
+    <h2>LectNotes AI</h2>
+    <p style="font-size:16px;">Smart Lecture Assistant for Notes & Summaries</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -34,122 +30,103 @@ st.sidebar.header("👤 User Profile")
 st.sidebar.text_input("Name")
 st.sidebar.text_input("Email")
 st.sidebar.selectbox("Role", ["Student", "Teacher", "Other"])
+st.sidebar.text_area("Notes / Remarks", height=80)
 st.sidebar.markdown("---")
 
+language_option = st.sidebar.radio(
+    "🌐 Select Output Language",
+    ["English", "Hindi"]
+)
+
+st.sidebar.info("Welcome to your smart lecture companion ✨")
+
 # ---------- MODEL LOADING ----------
+st.info("⏳ Loading AI models... First run may take a few minutes.")
+
 @st.cache_resource
 def load_models():
-    from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
+    processor = WhisperProcessor.from_pretrained("openai/whisper-small")
+    asr_model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
+    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    translator_hi = pipeline("translation_en_to_hi", model="Helsinki-NLP/opus-mt-en-hi")
+    return processor, asr_model, summarizer, translator_hi
 
-    processor = WhisperProcessor.from_pretrained(WHISPER_MODEL)
-    asr_model = WhisperForConditionalGeneration.from_pretrained(WHISPER_MODEL)
+with st.spinner("🔄 Initializing AI models..."):
+    processor, asr_model, summarizer, translator_hi = load_models()
 
-    summarizer = pipeline(
-        "summarization",
-        model="sshleifer/distilbart-cnn-12-6"
-    )
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+asr_model = asr_model.to(device)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    asr_model = asr_model.to(device)
-
-    return processor, asr_model, summarizer, device
-
-
-def get_models():
-    if "models" not in st.session_state:
-        with st.spinner("Loading AI models (first run only)..."):
-            st.session_state.models = load_models()
-    return st.session_state.models
-
-
-# ---------- TRANSCRIPTION ----------
-def transcribe_audio(audio_file, processor, asr_model, device):
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+# ---------- FUNCTIONS ----------
+def transcribe_audio(audio_file):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(audio_file.read())
         path = tmp.name
 
-    speech, _ = librosa.load(path, sr=SAMPLE_RATE, mono=True)
-    speech = speech[: SAMPLE_RATE * MAX_AUDIO_SECONDS]
+    speech, _ = librosa.load(path, sr=16000)
+    inputs = processor(speech, sampling_rate=16000, return_tensors="pt").to(device)
 
-    chunk_size = SAMPLE_RATE * CHUNK_SECONDS
-    transcripts = []
+    with torch.no_grad():
+        ids = asr_model.generate(**inputs)
 
-    progress = st.progress(0.0)
-    total_chunks = max(1, len(speech) // chunk_size)
+    return processor.batch_decode(ids, skip_special_tokens=True)[0]
 
-    for i, start in enumerate(range(0, len(speech), chunk_size)):
-        chunk = speech[start:start + chunk_size]
+def translate_to_hindi(text):
+    return translator_hi(text)[0]["translation_text"]
 
-        inputs = processor(chunk, sampling_rate=SAMPLE_RATE, return_tensors="pt")
-        inputs = {k: v.to(device) for k, v in inputs.items()}
-
-        with torch.no_grad():
-            ids = asr_model.generate(
-                **inputs,
-                task="transcribe",
-                max_new_tokens=128
-            )
-
-        text = processor.batch_decode(ids, skip_special_tokens=True)[0]
-        transcripts.append(text)
-        progress.progress((i + 1) / total_chunks)
-
-    return " ".join(transcripts)
-
-
-# ---------- PDF ----------
 def create_pdf(text, title, filename):
     c = canvas.Canvas(filename, pagesize=letter)
     c.setFont("Helvetica-Bold", 16)
     c.drawString(100, 750, title)
     c.setFont("Helvetica", 12)
-
     y = 720
+
     for line in text.split(". "):
         if y < 100:
             c.showPage()
-            c.setFont("Helvetica", 12)
             y = 750
+            c.setFont("Helvetica", 12)
         c.drawString(100, y, line.strip())
         y -= 18
 
     c.save()
     return filename
 
-
 # ---------- SESSION STATE ----------
 st.session_state.setdefault("transcript", "")
 st.session_state.setdefault("summary", "")
-st.session_state.setdefault("generate_summary", False)
 
 # ---------- TABS ----------
-tab_home, tab_summary = st.tabs(["🏠 Home", "🗒️ Summarize"])
+tabs = st.tabs(["🏠 Home", "🗒️ Summarize"])
 
-# ---------- HOME ----------
-with tab_home:
-    uploaded_file = st.file_uploader(
-        "🎤 Upload Lecture Audio (.wav / .mp3)",
-        type=["wav", "mp3"]
-    )
+# ---------- HOME TAB ----------
+with tabs[0]:
+    st.markdown("### 🎤 Upload Lecture Audio")
 
-    if uploaded_file:
-        processor, asr_model, summarizer, device = get_models()
+    if not st.session_state.transcript:
+        uploaded_file = st.file_uploader(
+            "Upload audio file (.wav / .mp3)",
+            type=["wav", "mp3"],
+            key="audio_uploader"
+        )
 
-        with st.spinner("Transcribing audio..."):
-            st.session_state.transcript = transcribe_audio(
-                uploaded_file, processor, asr_model, device
-            )
-
-        # Reset summary when new audio is uploaded
-        st.session_state.summary = ""
-        st.session_state.generate_summary = False
+        if uploaded_file:
+            with st.spinner("🎧 Transcribing audio..."):
+                st.session_state.transcript = transcribe_audio(uploaded_file)
+            st.success("✅ Transcription Completed")
+            st.stop()
 
     if st.session_state.transcript:
-        st.text_area(
-            "🗒️ Transcript",
-            st.session_state.transcript,
-            height=260
-        )
+        with st.expander("🗒️ View Transcript"):
+            st.text_area("Transcript", st.session_state.transcript, height=220)
+
+        if language_option == "Hindi":
+            with st.expander("🗒️ View Transcript (Hindi)"):
+                st.text_area(
+                    "Transcript (Hindi)",
+                    translate_to_hindi(st.session_state.transcript),
+                    height=220
+                )
 
         pdf = create_pdf(
             st.session_state.transcript,
@@ -161,48 +138,53 @@ with tab_home:
             st.download_button(
                 "⬇️ Download Transcript (PDF)",
                 f,
-                "lecture_transcript.pdf"
+                file_name="lecture_transcript.pdf"
             )
 
-# ---------- SUMMARY ----------
-with tab_summary:
-    if not st.session_state.transcript:
-        st.info("Upload audio in Home tab first.")
-    else:
-        processor, asr_model, summarizer, device = get_models()
+        if st.button("🔄 Reset"):
+            st.session_state.transcript = ""
+            st.session_state.summary = ""
 
+# ---------- SUMMARY TAB ----------
+with tabs[1]:
+    summary_length = st.slider("Select Summary Length", 50, 300, 150)
+
+    if st.session_state.transcript:
         if st.button("📚 Generate Summary"):
             with st.spinner("Generating summary..."):
                 st.session_state.summary = summarizer(
-                    st.session_state.transcript[:2000],
-                    max_length=250,
-                    min_length=100,
+                    st.session_state.transcript,
+                    max_length=summary_length,
+                    min_length=summary_length // 2,
                     do_sample=False
                 )[0]["summary_text"]
 
-        if st.session_state.summary:
+    if st.session_state.summary:
+        st.text_area("📘 Summary", st.session_state.summary, height=220)
+
+        if language_option == "Hindi":
             st.text_area(
-                "📘 Summary",
-                st.session_state.summary,
+                "📘 Summary (Hindi)",
+                translate_to_hindi(st.session_state.summary),
                 height=220
             )
 
-            pdf = create_pdf(
-                st.session_state.summary,
-                "Lecture Summary",
-                "lecture_summary.pdf"
+        pdf = create_pdf(
+            st.session_state.summary,
+            "Lecture Summary",
+            "lecture_summary.pdf"
+        )
+
+        with open(pdf, "rb") as f:
+            st.download_button(
+                "⬇️ Download Summary (PDF)",
+                f,
+                file_name="lecture_summary.pdf"
             )
 
-            with open(pdf, "rb") as f:
-                st.download_button(
-                    "⬇️ Download Summary (PDF)",
-                    f,
-                    "lecture_summary.pdf"
-                )
-                
 # ---------- FOOTER ----------
 st.markdown("---")
 st.markdown(
-    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LetUNote AI</center>",
+    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LectNotes AI</center>",
     unsafe_allow_html=True
 )
