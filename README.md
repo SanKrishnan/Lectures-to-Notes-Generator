@@ -187,6 +187,5 @@ See the LICENSE file for details.
 👩‍💻 Author
 
 Sanjana Krishnan
-LinkedIn | GitHub
 
 Building AI tools for education 🚀
