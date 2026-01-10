@@ -1,15 +1,8 @@
 import streamlit as st
 import tempfile
-import torch
-import librosa
 from transformers import pipeline
-from transformers.models.whisper import WhisperProcessor, WhisperForConditionalGeneration
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-
-# ---------------- CONFIG ----------------
-SAMPLE_RATE = 16000
-WHISPER_MODEL = "openai/whisper-tiny"
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="🎧 LetUNote AI", layout="wide")
@@ -26,32 +19,21 @@ padding:20px;border-radius:12px;text-align:center;color:white;">
 # ---------- LOAD MODELS ----------
 @st.cache_resource
 def load_models():
-    processor = WhisperProcessor.from_pretrained(WHISPER_MODEL)
-    model = WhisperForConditionalGeneration.from_pretrained(WHISPER_MODEL)
-    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    asr = pipeline(
+        "automatic-speech-recognition",
+        model="openai/whisper-tiny"
+    )
 
-    device = torch.device("cpu")
-    model.to(device)
+    summarizer = pipeline(
+        "summarization",
+        model="sshleifer/distilbart-cnn-12-6"
+    )
 
-    return processor, model, summarizer, device
+    return asr, summarizer
 
-processor, model, summarizer, device = load_models()
+asr, summarizer = load_models()
 
-# ---------- FUNCTIONS ----------
-def transcribe_audio(audio_file):
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(audio_file.read())
-        path = tmp.name
-
-    audio, _ = librosa.load(path, sr=SAMPLE_RATE)
-    inputs = processor(audio, sampling_rate=SAMPLE_RATE, return_tensors="pt").to(device)
-
-    with torch.no_grad():
-        ids = model.generate(**inputs)
-
-    return processor.batch_decode(ids, skip_special_tokens=True)[0]
-
-
+# ---------- PDF ----------
 def create_pdf(text, title, filename):
     c = canvas.Canvas(filename, pagesize=letter)
     c.setFont("Helvetica-Bold", 16)
@@ -70,7 +52,6 @@ def create_pdf(text, title, filename):
     c.save()
     return filename
 
-
 # ---------- SESSION STATE ----------
 if "transcript" not in st.session_state:
     st.session_state.transcript = ""
@@ -78,24 +59,35 @@ if "summary" not in st.session_state:
     st.session_state.summary = ""
 
 # ---------- UI ----------
-st.markdown("### 🎤 Upload Lecture Audio")
-audio_file = st.file_uploader("Upload audio file (.wav or .mp3)", type=["wav", "mp3"])
+audio_file = st.file_uploader(
+    "🎤 Upload lecture audio (.wav / .mp3)",
+    type=["wav", "mp3"]
+)
 
 if audio_file:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(audio_file.read())
+        audio_path = tmp.name
+
     with st.spinner("Transcribing audio..."):
-        st.session_state.transcript = transcribe_audio(audio_file)
+        result = asr(audio_path)
+        st.session_state.transcript = result["text"]
         st.session_state.summary = ""
 
 if st.session_state.transcript:
-    st.text_area("🗒️ Transcript", st.session_state.transcript, height=260)
+    st.text_area(
+        "🗒️ Transcript",
+        st.session_state.transcript,
+        height=260
+    )
 
-    transcript_pdf = create_pdf(
+    pdf = create_pdf(
         st.session_state.transcript,
         "Lecture Transcript",
         "lecture_transcript.pdf"
     )
 
-    with open(transcript_pdf, "rb") as f:
+    with open(pdf, "rb") as f:
         st.download_button(
             "⬇️ Download Transcript PDF",
             f,
@@ -112,15 +104,19 @@ if st.session_state.transcript:
             )[0]["summary_text"]
 
 if st.session_state.summary:
-    st.text_area("📘 Summary", st.session_state.summary, height=220)
+    st.text_area(
+        "📘 Summary",
+        st.session_state.summary,
+        height=220
+    )
 
-    summary_pdf = create_pdf(
+    pdf = create_pdf(
         st.session_state.summary,
         "Lecture Summary",
         "lecture_summary.pdf"
     )
 
-    with open(summary_pdf, "rb") as f:
+    with open(pdf, "rb") as f:
         st.download_button(
             "⬇️ Download Summary PDF",
             f,
