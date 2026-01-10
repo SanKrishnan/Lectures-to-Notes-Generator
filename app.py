@@ -5,62 +5,60 @@ import librosa
 from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-import os
 
+# ---------- PAGE CONFIG ----------
+st.set_page_config(page_title="🎧 LectNotes AI", layout="wide")
 
-# ---------- CONFIG ----------
-st.set_page_config(page_title="🎧 EduNote AI", layout="wide")
-st.markdown("<h2 style='text-align:center;color:#00C4FF;'>EduNote AI - Smart Lecture Assistant</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center;'>Convert Lectures ➜ Summaries ➜ Quizzes ➜ Insights</p>", unsafe_allow_html=True)
-
-# ---------- SIDEBAR (User Profile) ----------
-st.sidebar.header("👤 User Profile")
-user_name = st.sidebar.text_input("Name", placeholder="Enter your full name")
-user_email = st.sidebar.text_input("Email", placeholder="Enter your email")
-user_role = st.sidebar.selectbox("Role", ["Student", "Teacher", "Other"])
-user_notes = st.sidebar.text_area("Notes / Remarks", placeholder="Optional notes...", height=80)
-st.sidebar.markdown("---")
-st.sidebar.info("Welcome to your smart lecture companion ✨")
-
-
-# ---------- CUSTOM CSS ----------
 st.markdown("""
-<style>
-/* Gradient top bar */
-.stApp > header {
+<div style="
     background: linear-gradient(90deg,#00C4FF,#0066FF);
-    color: white;
-    height: 60px;
-}
-
-/* Big text area for questions */
-.big-text {
-    height: 150px;
-    font-size:16px;
-}
-
-/* Glow buttons */
-.stButton>button {
-    background: linear-gradient(90deg,#00C4FF,#0066FF);
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
     color:white;
-    border-radius:8px;
-    height:40px;
-    width:100%;
-    font-weight:bold;
-    font-size:16px;
-}
-</style>
+">
+    <h2>LectNotes AI</h2>
+    <p style="font-size:16px;">Smart Lecture Assistant for Notes & Summaries</p>
+</div>
 """, unsafe_allow_html=True)
+
+# ---------- SIDEBAR ----------
+st.sidebar.header("👤 User Profile")
+user_name = st.sidebar.text_input("Name")
+user_email = st.sidebar.text_input("Email")
+user_role = st.sidebar.selectbox("Role", ["Student", "Teacher", "Other"])
+user_notes = st.sidebar.text_area("Notes / Remarks", height=80)
+st.sidebar.markdown("---")
+
+st.sidebar.markdown("### 🌐 Language")
+language_option = st.sidebar.radio(
+    "Select Output Language",
+    ["English", "Hindi"]
+)
+
+st.sidebar.info("Welcome to your smart lecture companion ✨")
 
 # ---------- LOAD MODELS ----------
 @st.cache_resource
 def load_models():
     processor = WhisperProcessor.from_pretrained("openai/whisper-small")
     asr_model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
-    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
-    return processor, asr_model, summarizer
 
-processor, asr_model, summarizer = load_models()
+    summarizer = pipeline(
+        "summarization",
+        model="sshleifer/distilbart-cnn-12-6"
+    )
+
+    translator_hi = pipeline(
+        "translation_en_to_hi",
+        model="Helsinki-NLP/opus-mt-en-hi"
+    )
+
+    return processor, asr_model, summarizer, translator_hi
+
+
+processor, asr_model, summarizer, translator_hi = load_models()
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 asr_model = asr_model.to(device)
 
@@ -68,202 +66,166 @@ asr_model = asr_model.to(device)
 def transcribe_audio(audio_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(audio_file.read())
-        tmp_path = tmp.name
-    speech, sr = librosa.load(tmp_path, sr=16000)
-    inputs = processor(speech, sampling_rate=16000, return_tensors="pt").to(device)
+        audio_path = tmp.name
+
+    speech, _ = librosa.load(audio_path, sr=16000)
+    inputs = processor(
+        speech,
+        sampling_rate=16000,
+        return_tensors="pt"
+    ).to(device)
+
     with torch.no_grad():
         predicted_ids = asr_model.generate(**inputs)
-    transcript = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
-    return transcript
 
-def summarize_text(text):
-    return summarizer(text, max_length=150, min_length=50, do_sample=False)[0]["summary_text"]
-
-def generate_quiz(context):
-    return "⚠️ Quiz generation is disabled in this cloud prototype."
-
-def ask_gemini(question, context):
-    return "⚠️ Q&A feature is disabled in this deployment."
+    return processor.batch_decode(
+        predicted_ids,
+        skip_special_tokens=True
+    )[0]
 
 
-def create_pdf(content_text, title="Lecture Notes", filename="lecture_notes.pdf"):
-    """
-    Universal PDF generator for Transcript, Summary, and Quiz.
-    """
-    pdf_path = filename
-    c = canvas.Canvas(pdf_path, pagesize=letter)
+def translate_to_hindi(text):
+    return translator_hi(text)[0]["translation_text"]
+
+
+def create_pdf(content_text, title, filename):
+    c = canvas.Canvas(filename, pagesize=letter)
     c.setFont("Helvetica-Bold", 16)
     c.drawString(100, 750, title)
+
     c.setFont("Helvetica", 12)
     y = 720
 
-    # Split text smartly (handle paragraphs or long sentences)
-    for para in content_text.split("\n"):
-        for line in para.split(". "):
-            if not line.strip():
-                continue
-            # Wrap text lines that are too long
-            words = line.strip().split(" ")
-            line_buf = ""
-            for w in words:
-                if c.stringWidth(line_buf + " " + w, "Helvetica", 12) < 430:
-                    line_buf = (line_buf + " " + w).strip()
-                else:
-                    if y < 100:
-                        c.showPage()
-                        y = 750
-                        c.setFont("Helvetica", 12)
-                    c.drawString(100, y, line_buf)
-                    y -= 18
-                    line_buf = w
-            if line_buf:
-                if y < 100:
-                    c.showPage()
-                    y = 750
-                    c.setFont("Helvetica", 12)
-                c.drawString(100, y, line_buf)
-                y -= 18
-        y -= 6
+    for line in content_text.split(". "):
         if y < 100:
             c.showPage()
             y = 750
             c.setFont("Helvetica", 12)
 
+        c.drawString(100, y, line.strip())
+        y -= 18
+
     c.save()
-    return pdf_path
+    return filename
 
-# ---------- SESSION STATES ----------
-if "transcript" not in st.session_state:
-    st.session_state.transcript = ""
-if "summary" not in st.session_state:
-    st.session_state.summary = ""
-if "quiz" not in st.session_state:
-    st.session_state.quiz = ""
+# ---------- SESSION STATE ----------
+st.session_state.setdefault("transcript", "")
+st.session_state.setdefault("summary", "")
 
-# ---------- TOP TABS ----------
-tabs = st.tabs(["🏠 Home", "🗒️ Summarize", "🧩 Quiz", "💬 Q&A"])
+# ---------- TABS ----------
+tabs = st.tabs(["🏠 Home", "🗒️ Summarize"])
 
 # ---------- HOME TAB ----------
 with tabs[0]:
-    st.markdown("### 🎤 Upload Lecture Audio (Persistent)")
+    st.markdown("### 🎤 Upload Lecture Audio")
 
-    if not st.session_state.transcript:
-        uploaded_file = st.file_uploader("Upload audio (.wav/.mp3)", type=["wav", "mp3"])
-        if uploaded_file:
-            with st.spinner("🎧 Transcribing..."):
-                st.session_state.transcript = transcribe_audio(uploaded_file)
-            st.success("✅ Transcription Complete!")
-    else:
-        st.info("📝 Transcript already exists. To upload new audio, reset below.")
-        uploaded_file = None
+    uploaded_file = st.file_uploader(
+        "Upload audio file (.wav / .mp3)",
+        type=["wav", "mp3"]
+    )
+
+    if uploaded_file and not st.session_state.transcript:
+        with st.spinner("🎧 Transcribing audio..."):
+            st.session_state.transcript = transcribe_audio(uploaded_file)
+        st.success("✅ Transcription Completed")
 
     if st.session_state.transcript:
-        st.text_area("🗒️ Transcript", st.session_state.transcript, height=250)
+        with st.expander("🗒️ View Transcript"):
+            st.text_area(
+                "Transcript",
+                st.session_state.transcript,
+                height=220
+            )
 
-        # ✅ Generate transcript PDF
+        if language_option == "Hindi":
+            with st.expander("🗒️ View Transcript (Hindi)"):
+                st.text_area(
+                    "Transcript (Hindi)",
+                    translate_to_hindi(st.session_state.transcript),
+                    height=220
+                )
+
         transcript_pdf = create_pdf(
             st.session_state.transcript,
-            title="Lecture Transcript",
-            filename="lecture_transcript.pdf"
+            "Lecture Transcript",
+            "lecture_transcript.pdf"
         )
-        with open(transcript_pdf, "rb") as pdf_file:
+
+        with open(transcript_pdf, "rb") as f:
             st.download_button(
                 "⬇️ Download Transcript (PDF)",
-                data=pdf_file,
+                data=f,
                 file_name="lecture_transcript.pdf",
                 mime="application/pdf"
             )
 
-        # Reset Button
-        if st.button("🔄 Reset Transcript & Upload New Audio"):
+        if st.button("🔄 Reset"):
             st.session_state.transcript = ""
             st.session_state.summary = ""
-            st.session_state.quiz = ""
 
-
-# ---------- SUMMARIZE TAB ----------
+# ---------- SUMMARY TAB ----------
 with tabs[1]:
     summary_length = st.slider(
         "Select Summary Length",
-        min_value=50,
-        max_value=300,
-        value=150
+        50, 300, 150
     )
 
     if st.session_state.transcript:
-        if not st.session_state.summary:
-            if st.button("📚 Generate Summary"):
-                with st.spinner("Summarizing..."):
-                    st.session_state.summary = summarizer(
-                        st.session_state.transcript,
-                        max_length=summary_length,
-                        min_length=summary_length // 2,
-                        do_sample=False
-                    )[0]["summary_text"]
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            generate_summary = st.button("📚 Generate Summary")
 
-        if st.session_state.summary:
-            st.success("✅ Summary Ready!")
-            st.text_area("📘 Summary", st.session_state.summary, height=250)
+        if generate_summary:
+            with st.spinner("Generating summary..."):
+                st.session_state.summary = summarizer(
+                    st.session_state.transcript,
+                    max_length=summary_length,
+                    min_length=summary_length // 2,
+                    do_sample=False
+                )[0]["summary_text"]
 
-            summary_pdf = create_pdf(
-                st.session_state.summary,
-                title="Lecture Summary",
-                filename="lecture_summary.pdf"
+    if st.session_state.summary:
+        st.markdown("""
+        <div style="
+            background:#f4f8ff;
+            padding:15px;
+            border-radius:10px;
+            border-left:5px solid #0066FF;
+        ">
+            <h4>📘 Lecture Summary</h4>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.text_area(
+            "Summary",
+            st.session_state.summary,
+            height=220
+        )
+
+        if language_option == "Hindi":
+            st.text_area(
+                "Summary (Hindi)",
+                translate_to_hindi(st.session_state.summary),
+                height=220
             )
-            with open(summary_pdf, "rb") as pdf_file:
-                st.download_button(
-                    "⬇️ Download Summary (PDF)",
-                    data=pdf_file,
-                    file_name="lecture_summary.pdf",
-                    mime="application/pdf"
-                )
-    else:
-        st.warning("Upload and transcribe audio first from Home tab.")
 
-# ---------- QUIZ TAB ----------
-with tabs[2]:
-    if st.session_state.transcript:
-        if not st.session_state.quiz:
-            if st.button("🎯 Generate Quiz"):
-                with st.spinner("Generating quiz..."):
-                    st.session_state.quiz = generate_quiz(st.session_state.transcript)
+        summary_pdf = create_pdf(
+            st.session_state.summary,
+            "Lecture Summary",
+            "lecture_summary.pdf"
+        )
 
-        if st.session_state.quiz:
-            st.success("✅ Quiz Ready!")
-            st.text_area("📝 Quiz Questions", st.session_state.quiz, height=300)
-
-            # ✅ Generate Quiz PDF
-            quiz_pdf = create_pdf(
-                st.session_state.quiz,
-                title="Lecture Quiz",
-                filename="lecture_quiz.pdf"
+        with open(summary_pdf, "rb") as f:
+            st.download_button(
+                "⬇️ Download Summary (PDF)",
+                data=f,
+                file_name="lecture_summary.pdf",
+                mime="application/pdf"
             )
-            with open(quiz_pdf, "rb") as pdf_file:
-                st.download_button(
-                    "⬇️ Download Quiz (PDF)",
-                    data=pdf_file,
-                    file_name="lecture_quiz.pdf",
-                    mime="application/pdf"
-                )
-    else:
-        st.warning("Upload and transcribe audio first from Home tab.")
 
-# ---------- Q&A TAB ----------
-with tabs[3]:
-    if st.session_state.transcript:
-        question = st.text_area("💬 Ask a question about the lecture:", height=150, key="qna_box")
-        if st.button("Get Answer"):
-            if question.strip():
-                with st.spinner("Thinking..."):
-                    answer = ask_gemini(question, st.session_state.transcript)
-                st.success("✅ Answer:")
-                st.text_area("Answer", answer, height=150)
-            else:
-                st.warning("Please type a question.")
-    else:
-        st.warning("Upload and transcribe audio first from Home tab.")
-
+# ---------- FOOTER ----------
 st.markdown("---")
-st.caption("© 2025 Sanjana Krishnan | Academic Prototype")
-st.caption("⚡ Built with Streamlit + Whisper + Transformers")
-
+st.markdown(
+    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LectNotes AI /center>",
+    unsafe_allow_html=True
+)
