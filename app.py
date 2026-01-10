@@ -2,7 +2,6 @@ import streamlit as st
 import tempfile
 import torch
 import librosa
-from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import os
@@ -16,7 +15,7 @@ WHISPER_MODEL = os.getenv("WHISPER_MODEL", "openai/whisper-tiny")
 torch.set_num_threads(2)
 
 # ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="🎧 LectNotes AI", layout="wide")
+st.set_page_config(page_title="🎧 LetUNote AI", layout="wide")
 
 # ---------- HEADER ----------
 st.markdown("""
@@ -34,14 +33,15 @@ st.sidebar.text_input("Email")
 st.sidebar.selectbox("Role", ["Student", "Teacher", "Other"])
 st.sidebar.markdown("---")
 
-language_option = st.sidebar.radio(
-    "🌐 Select Output Language",
-    ["English", "Hindi"]
-)
-
-# ---------- MODEL LOADING ----------
+# ---------- MODEL LOADING (SAFE) ----------
 @st.cache_resource
 def load_models():
+    from transformers import (
+        WhisperProcessor,
+        WhisperForConditionalGeneration,
+        pipeline
+    )
+
     processor = WhisperProcessor.from_pretrained(WHISPER_MODEL)
     asr_model = WhisperForConditionalGeneration.from_pretrained(WHISPER_MODEL)
 
@@ -50,39 +50,17 @@ def load_models():
         model="sshleifer/distilbart-cnn-12-6"
     )
 
-    translator_en_hi = pipeline(
-        "translation_en_to_hi",
-        model="Helsinki-NLP/opus-mt-en-hi"
-    )
-
-    translator_hi_en = pipeline(
-        "translation_hi_to_en",
-        model="Helsinki-NLP/opus-mt-hi-en"
-    )
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     asr_model = asr_model.to(device)
 
-    return processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device
+    return processor, asr_model, summarizer, device
 
 
 def get_models():
     if "models" not in st.session_state:
-        with st.spinner("Loading AI models..."):
+        with st.spinner("Loading AI models (first time only)..."):
             st.session_state.models = load_models()
     return st.session_state.models
-
-
-# ---------- HELPERS ----------
-def is_hindi(text):
-    return any('\u0900' <= ch <= '\u097F' for ch in text)
-
-
-def get_output_text(text, translator_en_hi, translator_hi_en):
-    if language_option == "English":
-        return translator_hi_en(text)[0]["translation_text"] if is_hindi(text) else text
-    else:
-        return translator_en_hi(text)[0]["translation_text"] if not is_hindi(text) else text
 
 
 # ---------- TRANSCRIPTION ----------
@@ -155,7 +133,7 @@ with tabs[0]:
     )
 
     if uploaded_file:
-        processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device = get_models()
+        processor, asr_model, summarizer, device = get_models()
 
         with st.spinner("Transcribing full audio..."):
             st.session_state.transcript = transcribe_audio(
@@ -164,60 +142,64 @@ with tabs[0]:
             st.session_state.summary = ""
 
     if st.session_state.transcript:
-        processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device = get_models()
-
-        final_text = get_output_text(
-            st.session_state.transcript,
-            translator_en_hi,
-            translator_hi_en
-        )
-
         st.text_area(
-            f"🗒️ Transcript ({language_option})",
-            final_text,
+            "🗒️ Transcript",
+            st.session_state.transcript,
             height=260
         )
 
-        pdf = create_pdf(final_text, "Lecture Transcript", "lecture_transcript.pdf")
+        pdf = create_pdf(
+            st.session_state.transcript,
+            "Lecture Transcript",
+            "lecture_transcript.pdf"
+        )
+
         with open(pdf, "rb") as f:
-            st.download_button("⬇️ Download Transcript", f, "lecture_transcript.pdf")
+            st.download_button(
+                "⬇️ Download Transcript",
+                f,
+                "lecture_transcript.pdf"
+            )
 
 # ---------- SUMMARY ----------
 with tabs[1]:
     if not st.session_state.transcript:
         st.info("Upload audio in Home tab first.")
     else:
-        processor, asr_model, summarizer, translator_en_hi, translator_hi_en, device = get_models()
+        processor, asr_model, summarizer, device = get_models()
 
         if st.button("📚 Generate Summary"):
             with st.spinner("Summarizing..."):
                 st.session_state.summary = summarizer(
                     st.session_state.transcript[:2000],
-                    max_length=300,
+                    max_length=250,
                     min_length=100,
                     do_sample=False
                 )[0]["summary_text"]
 
         if st.session_state.summary:
-            final_summary = get_output_text(
-                st.session_state.summary,
-                translator_en_hi,
-                translator_hi_en
-            )
-
             st.text_area(
-                f"📘 Summary ({language_option})",
-                final_summary,
+                "📘 Summary",
+                st.session_state.summary,
                 height=220
             )
 
-            pdf = create_pdf(final_summary, "Lecture Summary", "lecture_summary.pdf")
+            pdf = create_pdf(
+                st.session_state.summary,
+                "Lecture Summary",
+                "lecture_summary.pdf"
+            )
+
             with open(pdf, "rb") as f:
-                st.download_button("⬇️ Download Summary", f, "lecture_summary.pdf")
+                st.download_button(
+                    "⬇️ Download Summary",
+                    f,
+                    "lecture_summary.pdf"
+                )
 
 # ---------- FOOTER ----------
 st.markdown("---")
 st.markdown(
-    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LectNotes AI</center>",
+    "<center style='color:gray;'>© 2025 Sanjana Krishnan • LetUNote AI</center>",
     unsafe_allow_html=True
 )
