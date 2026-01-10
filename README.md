@@ -1,53 +1,53 @@
-🎧 LectNotes AI – Smart Lecture Assistant
+# 🎧 **LectNotes AI**
+### *Smart Lecture Assistant for Audio-to-Notes & Summaries*
 
-LectNotes AI is an AI-powered web application that converts lecture audio into readable text and concise summaries. It also supports English-to-Hindi translation to help multilingual learners understand academic content more effectively.
+LectNotes AI is an AI-powered web application that converts lecture audio into structured text and concise summaries. It also supports English-to-Hindi translation, making it useful for multilingual learners and academic environments.
 
-✨ Key Features
+---
 
-🎤 Speech-to-Text Conversion
-Converts lecture audio files into text using the Whisper speech recognition model.
+## 🚀 **Key Features**
 
-📘 Automatic Lecture Summarization
-Generates concise summaries from long lecture transcripts using transformer-based NLP models.
+- 🎤 **Speech-to-Text Conversion**  
+  Converts uploaded lecture audio files into readable text using the Whisper speech recognition model.
 
-🌐 English → Hindi Translation
-Supports multilingual learning by translating transcripts and summaries into Hindi.
+- 📘 **Automatic Lecture Summarization**  
+  Generates concise and meaningful summaries from long lecture transcripts using transformer-based NLP models.
 
-📄 PDF Download
-Allows users to download transcripts and summaries as PDF files.
+- 🌐 **English → Hindi Translation**  
+  Provides multilingual support by translating transcripts and summaries into Hindi.
 
-🎨 Simple & Interactive UI
-Built using Streamlit with a clean and user-friendly interface.
+- 📄 **PDF Export**  
+  Enables users to download transcripts and summaries as PDF files for offline study.
 
-🧠 Technologies Used
+- 🎨 **Clean & Interactive UI**  
+  Built using Streamlit with a simple, academic-friendly interface.
 
-Python
+---
 
-Streamlit – Web interface
+## 🧠 **Technologies Used**
 
-OpenAI Whisper – Speech-to-text
+- **Python**
+- **Streamlit** – Web application framework  
+- **OpenAI Whisper** – Speech-to-text model  
+- **DistilBART** – Text summarization model  
+- **Helsinki NLP Opus-MT** – English to Hindi translation  
+- **Hugging Face Transformers**
+- **ReportLab** – PDF generation  
 
-DistilBART – Text summarization
+---
 
-Helsinki NLP Opus-MT – English to Hindi translation
+## 🏗️ **System Workflow**
 
-ReportLab – PDF generation
+1. User uploads a lecture audio file  
+2. Audio is converted to text using Whisper  
+3. Transcript is summarized using a transformer model  
+4. Optional translation to Hindi is applied  
+5. Output is displayed and can be downloaded as a PDF  
 
-Hugging Face Transformers
+---
 
-🏗️ System Workflow
+## 📁 **Project Structure**
 
-User uploads a lecture audio file
-
-Audio is converted into text using Whisper
-
-Text is summarized using a transformer model
-
-Output can be translated to Hindi
-
-Results are displayed and downloadable as PDFs
-
-📁 Project Structure
 LectNotes-AI/
 │
 ├── app.py
@@ -56,29 +56,39 @@ LectNotes-AI/
 ├── .gitignore
 └── LICENSE
 
-⚙️ How to Run Locally
+yaml
+Copy code
 
-1️⃣ Clone the repository:
+---
 
+## ⚙️ **How to Run Locally**
+
+### 1️⃣ Clone the Repository
+```bash
 git clone https://github.com/your-username/LectNotes-AI.git
 cd LectNotes-AI
-
-
-2️⃣ Install dependencies:
-
+2️⃣ Install Dependencies
+bash
+Copy code
 pip install -r requirements.txt
-
-
-3️⃣ Run the application:
-
+3️⃣ Run the Application
+bash
+Copy code
 streamlit run app.py
-
 🌍 Deployment
+LectNotes AI can be deployed using Streamlit Community Cloud:
 
-The project can be deployed on Streamlit Community Cloud by connecting the GitHub repository and selecting app.py as the main file.
+Push the project to GitHub
 
-🎓 Academic Use
+Visit https://streamlit.io/cloud
 
+Connect your GitHub repository
+
+Select app.py as the main file
+
+Click Deploy
+
+🎓 Academic Use Case
 This project is suitable for:
 
 AI & Data Science coursework
@@ -87,32 +97,28 @@ Lecture note automation
 
 Multilingual education support
 
-Speech and NLP-based applications
+Speech and NLP-based academic applications
 
 ⚠️ Limitations
-
 Translation accuracy may vary for technical terms
 
 Large audio files may take longer to process
 
-Requires internet access for model loading
+Internet connection required for model loading
 
-🔮 Future Scope
-
+🔮 Future Enhancements
 Quiz generation from lecture content
 
 Support for additional languages
 
 Keyword extraction and highlights
 
-Improved formatting of generated PDFs
+Improved formatting for generated PDFs
 
 👩‍💻 Author
-
 Sanjana Krishnan
-
-
+Computer Science Engineering Student
+Academic Project – 2025
 
 📜 License
-
 This project is licensed under the MIT License and is intended for academic and educational use.
