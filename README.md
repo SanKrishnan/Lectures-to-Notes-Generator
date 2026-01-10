@@ -1,24 +1,32 @@
-### 🎧 LectNotes AI
+🎧 LectNotes AI
 Smart Lecture Assistant for Audio-to-Notes & Summaries
-LectNotes AI is an AI-powered web application that transforms lecture audio into structured text notes, concise summaries, and Hindi translations. Perfect for students, educators, and multilingual learners seeking efficient lecture note automation.
 
-[
+LectNotes AI is an AI-powered web application that converts lecture audio into structured transcripts, concise summaries, and multilingual outputs. It is designed for students, educators, and multilingual learners who want to automate lecture note creation efficiently.
 
 ✨ Key Features
 🎤 Speech-to-Text Conversion
-Converts uploaded lecture audio files (MP3, WAV, M4A) into accurate transcripts using OpenAI's Whisper model.
+
+Accurately converts lecture audio files (MP3, WAV, M4A) into text using OpenAI Whisper.
 
 📘 AI-Powered Summarization
-Generates concise, meaningful summaries from lengthy transcripts using DistilBART transformer model.
 
-🌐 English → Hindi Translation
-Provides seamless multilingual support by translating transcripts and summaries into Hindi.
+Generates concise and meaningful summaries from long transcripts using DistilBART.
+
+🌐 Multilingual Support (English & Hindi)
+
+English audio → English text
+
+Hindi audio → Hindi text
+
+Optional English ↔ Hindi translation
 
 📄 PDF Export
-Download formatted transcripts, summaries, and translations as professional PDF files.
 
-🎨 Interactive UI
-Clean, academic-friendly interface built with Streamlit for effortless usage.
+Download transcripts and summaries as professionally formatted PDFs for offline study.
+
+🎨 Interactive User Interface
+
+Clean, academic-friendly interface built using Streamlit for a smooth user experience.
 
 🛠️ Tech Stack
 Category	Technology
@@ -29,130 +37,158 @@ Translation	Helsinki NLP Opus-MT
 PDF Generation	ReportLab
 Backend	Python, Hugging Face Transformers
 🚀 Quick Start
-Prerequisites
+🔹 Prerequisites
+
 Python 3.8+
 
 Git
 
-FFmpeg (for audio processing)
+FFmpeg (required for audio processing)
 
-Installation
-Clone the repository
+🔹 Installation
 
-bash
+Clone the repository:
+
 git clone https://github.com/your-username/LectNotes-AI.git
 cd LectNotes-AI
-Install dependencies
 
-bash
+
+Install dependencies:
+
 pip install -r requirements.txt
-Run the application
 
-bash
+
+Run the application:
+
 streamlit run app.py
 
 📋 Usage Workflow
-Upload your lecture audio file (MP3, WAV, M4A supported)
+
+Upload a lecture audio file (MP3 / WAV / M4A)
 
 Convert audio to text using Whisper
 
 View the complete transcript
 
-Generate AI-powered summary
+Generate an AI-powered summary
 
 Translate to Hindi (optional)
 
-Download as PDF for offline study
+Download transcript or summary as PDF
 
 🌐 Deployment
-Streamlit Community Cloud (Recommended)
+✅ Streamlit Community Cloud (Recommended)
+
 Push your code to GitHub
 
-Visit Streamlit Cloud
+Visit 👉 https://streamlit.io/cloud
 
 Connect your GitHub repository
 
-Set app.py as the main file
+Select app.py as the main file
 
-Deploy!
+Deploy 🎉
 
-Other Options
-Render, Railway, Heroku
+Other Supported Platforms
 
-Docker (Dockerfile available)
+Render
+
+Railway
+
+Docker (Dockerfile compatible)
 
 📁 Project Structure
-text
 LectNotes-AI/
 │
 ├── app.py                 # Main Streamlit application
 ├── utils/
-│   ├── audio_processor.py # Audio handling & Whisper integration
+│   ├── audio_processor.py # Whisper & audio handling
 │   ├── summarizer.py      # Text summarization logic
 │   ├── translator.py      # Translation functions
-│   └── pdf_generator.py   # PDF export functionality
+│   └── pdf_generator.py   # PDF export utilities
 ├── requirements.txt       # Python dependencies
 ├── .streamlit/            # Streamlit configuration
 ├── README.md
 ├── LICENSE
 └── .gitignore
+
 🎓 Academic Use Cases
-AI/ML Coursework: Convert lectures to notes for revision
 
-Multilingual Learning: Hindi translations for regional students
+AI/ML Coursework – Convert lectures into revision notes
 
-Research: Quick transcription of interviews/seminars
+Multilingual Learning – Hindi support for regional learners
 
-Study Groups: Share summarized lecture content
+Research – Transcribe interviews, seminars, and talks
 
-Accessibility: Audio-to-text for hearing-impaired students
+Study Groups – Share summarized lecture content
+
+Accessibility – Audio-to-text for hearing-impaired users
 
 ⚠️ Known Limitations
-Translation accuracy varies for technical jargon
 
-Large audio files (>30min) may take 2-5 minutes to process
+Translation accuracy may vary for technical terminology
 
-Requires internet for initial model downloads
+Large audio files (>30 minutes) may take 2–5 minutes to process
 
-Best performance with clear audio quality
+Initial model download requires internet access
+
+Best results achieved with clear audio quality
 
 🔮 Future Enhancements
-🧠 Quiz/question generation from lecture content
+
+🧠 Quiz & question generation from lecture content
 
 🌍 Support for additional Indian languages (Tamil, Telugu, etc.)
 
-✨ Keyword extraction and highlight features
+✨ Keyword extraction & highlights
 
 📊 Speaker diarization (multi-speaker lectures)
 
-🎯 Advanced PDF formatting with tables of contents
+🎯 Advanced PDF formatting (TOC, sections)
 
 📊 Performance Benchmarks
-Feature	Processing Time (5min audio)	Accuracy
-Speech-to-Text	~45 seconds	95%+ (clear audio)
-Summarization	~8 seconds	Contextually relevant
-Translation	~5 seconds	High for standard terms
+Feature	Processing Time (5-min audio)	Accuracy
+Speech-to-Text	~45 seconds	95%+
+Summarization	~8 seconds	Contextually accurate
+Translation	~5 seconds	High (standard terms)
 🤝 Contributing
+
+Contributions are welcome!
+
 Fork the repository
 
-Create your feature branch (git checkout -b feature/AmazingFeature)
+Create a feature branch
 
-Commit your changes (git commit -m 'Add some AmazingFeature')
+git checkout -b feature/AmazingFeature
 
-Push to the branch (git push origin feature/AmazingFeature)
+
+Commit your changes
+
+git commit -m "Add AmazingFeature"
+
+
+Push to the branch
+
+git push origin feature/AmazingFeature
+
 
 Open a Pull Request
 
 📜 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+This project is licensed under the MIT License.
+See the LICENSE file for details.
 
 👩‍💻 Author
+
 Sanjana Krishnan
-LinkedIn | GitHub
-Building AI tools for education
+📎 LinkedIn | GitHub
+Building AI tools for education 🚀
 
-⭐ Show your support
-Give a ⭐ if this project helped you!
-Request a feature | Report a bug
-<div align="center"> <img src="https://img.shields.io/badge/built%20with-Streamlit-orange.svg" alt="Built with Streamlit"> <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"> </div>
+⭐ Support the Project
 
+If this project helped you, please consider giving it a ⭐ on GitHub!
+
+📌 Request a feature | 🐞 Report a bug
+
+<div align="center"> <img src="https://img.shields.io/badge/Built%20With-Streamlit-orange.svg" /> <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg" /> </div>
