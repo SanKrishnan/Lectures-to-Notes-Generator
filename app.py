@@ -21,7 +21,7 @@ st.set_page_config(page_title="🎧 LetUNote AI", layout="wide")
 st.markdown("""
 <div style="background: linear-gradient(90deg,#00C4FF,#0066FF);
 padding:20px;border-radius:12px;text-align:center;color:white;">
-<h2>LectNotes AI</h2>
+<h2>LetUNote AI</h2>
 <p>Smart Lecture Assistant for Notes & Summaries</p>
 </div>
 """, unsafe_allow_html=True)
@@ -33,14 +33,10 @@ st.sidebar.text_input("Email")
 st.sidebar.selectbox("Role", ["Student", "Teacher", "Other"])
 st.sidebar.markdown("---")
 
-# ---------- MODEL LOADING (SAFE) ----------
+# ---------- MODEL LOADING ----------
 @st.cache_resource
 def load_models():
-    from transformers import (
-        WhisperProcessor,
-        WhisperForConditionalGeneration,
-        pipeline
-    )
+    from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
 
     processor = WhisperProcessor.from_pretrained(WHISPER_MODEL)
     asr_model = WhisperForConditionalGeneration.from_pretrained(WHISPER_MODEL)
@@ -58,7 +54,7 @@ def load_models():
 
 def get_models():
     if "models" not in st.session_state:
-        with st.spinner("Loading AI models (first time only)..."):
+        with st.spinner("Loading AI models (first run only)..."):
             st.session_state.models = load_models()
     return st.session_state.models
 
@@ -121,12 +117,13 @@ def create_pdf(text, title, filename):
 # ---------- SESSION STATE ----------
 st.session_state.setdefault("transcript", "")
 st.session_state.setdefault("summary", "")
+st.session_state.setdefault("generate_summary", False)
 
 # ---------- TABS ----------
-tabs = st.tabs(["🏠 Home", "🗒️ Summarize"])
+tab_home, tab_summary = st.tabs(["🏠 Home", "🗒️ Summarize"])
 
 # ---------- HOME ----------
-with tabs[0]:
+with tab_home:
     uploaded_file = st.file_uploader(
         "🎤 Upload Lecture Audio (.wav / .mp3)",
         type=["wav", "mp3"]
@@ -135,11 +132,14 @@ with tabs[0]:
     if uploaded_file:
         processor, asr_model, summarizer, device = get_models()
 
-        with st.spinner("Transcribing full audio..."):
+        with st.spinner("Transcribing audio..."):
             st.session_state.transcript = transcribe_audio(
                 uploaded_file, processor, asr_model, device
             )
-            st.session_state.summary = ""
+
+        # Reset summary when new audio is uploaded
+        st.session_state.summary = ""
+        st.session_state.generate_summary = False
 
     if st.session_state.transcript:
         st.text_area(
@@ -156,28 +156,33 @@ with tabs[0]:
 
         with open(pdf, "rb") as f:
             st.download_button(
-                "⬇️ Download Transcript",
+                "⬇️ Download Transcript (PDF)",
                 f,
                 "lecture_transcript.pdf"
             )
 
 # ---------- SUMMARY ----------
-with tabs[1]:
+with tab_summary:
     if not st.session_state.transcript:
         st.info("Upload audio in Home tab first.")
     else:
         processor, asr_model, summarizer, device = get_models()
 
+        # Button only sets state
         if st.button("📚 Generate Summary"):
-            with st.spinner("Summarizing..."):
-                st.session_state.summary = summarizer(
-                    st.session_state.transcript[:2000],
-                    max_length=250,
-                    min_length=100,
-                    do_sample=False
-                )[0]["summary_text"]
+            st.session_state.generate_summary = True
 
-        if st.session_state.summary:
+        # Actual summary logic
+        if st.session_state.generate_summary:
+            if not st.session_state.summary:
+                with st.spinner("Generating summary..."):
+                    st.session_state.summary = summarizer(
+                        st.session_state.transcript[:2000],
+                        max_length=250,
+                        min_length=100,
+                        do_sample=False
+                    )[0]["summary_text"]
+
             st.text_area(
                 "📘 Summary",
                 st.session_state.summary,
@@ -192,7 +197,7 @@ with tabs[1]:
 
             with open(pdf, "rb") as f:
                 st.download_button(
-                    "⬇️ Download Summary",
+                    "⬇️ Download Summary (PDF)",
                     f,
                     "lecture_summary.pdf"
                 )
