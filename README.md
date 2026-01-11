@@ -10,53 +10,52 @@ LetUNote AI is a web-based application that helps students and educators transfo
 
 ## 🚀 Overview
 
-LetUNote AI streamlines the learning process by automating note creation from lecture audio. Built with Streamlit and Hugging Face transformers, the application provides a simple, interactive interface for converting audio content into structured textual material suitable for revision and study.
-
+LetUNote AI streamlines the learning process by automating note creation from lecture audio. Built with Streamlit and Hugging Face Transformers, the application converts spoken lectures into lecture transcripts, concise summaries, structured study notes, quiz questions, and flashcards, enabling students to focus on understanding concepts rather than manually taking notes.
 ---
 
 ## ✨ Key Features
 
-- 🎤 **Audio Transcription**  
-  Converts English lecture audio files (`.wav`, `.mp3`) into accurate text using OpenAI Whisper.
+- 🎤 Audio Transcription
+Converts English lecture audio files (.wav) into accurate text using OpenAI Whisper.
 
-- 📘 **AI-Powered Summarization**  
-  Generates concise and context-aware summaries from long transcripts using transformer-based NLP models.
+- 📘 AI-Powered Summarization
+Generates concise, context-aware summaries from long lecture transcripts using transformer-based NLP models.
 
-- 🌐 **English → Hindi Translation**  
-  Provides optional translation of transcripts and summaries into Hindi for multilingual learners.
+- 📝 Study Notes, Quiz & Flashcards
+Automatically creates structured study notes, quiz questions, and flashcards from lecture content using generative AI.
 
-- 📄 **PDF Export**  
-  Allows users to download transcripts and summaries as clean, formatted PDF documents.
+- 📄 PDF Export
+Allows users to download transcripts and summaries as clean, formatted PDF documents.
 
-- 🎨 **Interactive UI**  
-  Clean, academic-friendly interface built with Streamlit for easy interaction.
+- 🎨 Interactive UI
+Academic-friendly interface built with Streamlit for smooth and intuitive interaction.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category | Technology |
-|--------|------------|
-| Frontend | Streamlit |
-| Speech-to-Text | OpenAI Whisper |
-| Summarization | DistilBART (Hugging Face) |
-| Translation | Helsinki NLP (Opus-MT) |
-| Audio Processing | Librosa |
-| PDF Generation | ReportLab |
-| Backend | Python |
+| Category         | Technology                |
+| ---------------- | ------------------------- |
+| Frontend         | Streamlit                 |
+| Speech-to-Text   | OpenAI Whisper            |
+| Text Generation  | DistilBART (Hugging Face) |
+| Audio Processing | Librosa                   |
+| PDF Generation   | ReportLab                 |
+| Backend          | Python                    |
+
 
 ---
 
 ## 📂 Project Structure
 ```bash
-LetUNote-AI/
+LetUNote_AI/
 │
-├── app.py # Main Streamlit application
-├── requirements.txt # Project dependencies
-├── README.md # Documentation
-└── .streamlit/ # Streamlit configuration
-```
+├── app.py              # Main Streamlit application
+├── requirements.txt    # Project dependencies
+├── README.md           # Documentation
+└── .streamlit/         # Streamlit configuration (optional)
 
+```
 ---
 
 ## ⚡ Installation & Usage
@@ -94,23 +93,26 @@ LetUNote AI is optimized for free-tier cloud deployment and runs successfully on
 
 - Audio-based learning accessibility
 
-- Multilingual academic content creation
+- AI-assisted study material creation
 
 ## ⚠️ Known Limitations
--cBest performance with clear English audio
+- Best performance with clear English audio
 
 - Long audio files (>5 minutes) may take longer to process on free-tier CPU
 
-- Hindi audio transcription is not supported in the free version
+- Currently supports WAV audio only for cloud compatibility
 
 ## 🔮 Future Enhancements
-- Quiz and question generation from lecture content
-
-- Support for additional Indian languages
+- Multilingual transcription and translation
 
 - Timestamped transcripts
 
 - Keyword extraction and topic highlighting
+
+- Enhanced quiz difficulty levels
+
+- Integration with Notion / Anki
+
 
 ## 👩‍💻 Author
 Sanjana Krishnan
