@@ -1,7 +1,8 @@
-# 🎧 LetUNote AI  
-**An AI-powered lecture assistant that converts audio into study-ready notes and summaries**
+# 🎧 LetUNote AI
 
-LetUNote AI is a web-based application that helps students and educators transform lecture recordings into accurate transcripts, concise summaries, and downloadable PDFs using modern Speech-to-Text and Natural Language Processing models.
+An AI-powered lecture assistant that converts audio into study-ready notes, summaries & questions
+
+LetUNote AI is a web-based application that helps students and educators transform lecture recordings into clean transcripts, structured summaries, and exam-style questions — all exportable as a PDF. Powered by modern Speech-to-Text and NLP models, it makes studying easier and faster.
 
 ---
 
@@ -10,39 +11,50 @@ LetUNote AI is a web-based application that helps students and educators transfo
 
 ## 🚀 Overview
 
-LetUNote AI streamlines the learning process by automating note creation from lecture audio. Built with Streamlit and Hugging Face Transformers, the application converts spoken lectures into lecture transcripts, concise summaries, structured study notes, quiz questions, and flashcards, enabling students to focus on understanding concepts rather than manually taking notes.
+LetUNote AI streamlines the note-taking process by automatically generating learning material from lecture audio.
+Built with Streamlit and Hugging Face Transformers, the app converts spoken lectures into:
+
+- Cleaned transcript (no repetitions or glitches)
+
+- Concise AI-generated summary
+
+- Structured exam-style questions
+
+- Downloadable formatted PDF
+
+LetUNote AI enables students to focus on learning instead of manually writing notes.
 ---
 
 ## ✨ Key Features
 
 - 🎤 Audio Transcription
-Converts English lecture audio files (.wav) into accurate text using OpenAI Whisper.
+Converts WAV/MP3 lecture audio into readable text using OpenAI Whisper.
 
 - 📘 AI-Powered Summarization
-Generates concise, context-aware summaries from long lecture transcripts using transformer-based NLP models.
+Generates clean, concise summaries using BART (facebook/bart-large-cnn).
 
-- 📝 Study Notes, Quiz & Flashcards
-Automatically creates structured study notes, quiz questions, and flashcards from lecture content using generative AI.
+- ❓ Automatic Question Generation
+Creates exam-style MCQ/short-answer style questions using T5 (valhalla/t5-small-qg-hl).
 
-- 📄 PDF Export
-Allows users to download transcripts and summaries as clean, formatted PDF documents.
+= 📄 PDF Export
+Allows users to download transcript, summary, and questions in a polished PDF layout.
 
-- 🎨 Interactive UI
-Academic-friendly interface built with Streamlit for smooth and intuitive interaction.
+- 🎨 Clean Streamlit UI
+Academic-friendly, responsive interface with tabs for Transcript, Summary, and Questions.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category         | Technology                |
-| ---------------- | ------------------------- |
-| Frontend         | Streamlit                 |
-| Speech-to-Text   | OpenAI Whisper            |
-| Text Generation  | DistilBART (Hugging Face) |
-| Audio Processing | Librosa                   |
-| PDF Generation   | ReportLab                 |
-| Backend          | Python                    |
-
+| Category         | Technology                    |
+| ---------------- | ----------------------------- |
+| Frontend         | Streamlit                     |
+| Speech-to-Text   | OpenAI Whisper (Hugging Face) |
+| Summarization    | facebook/bart-large-cnn       |
+| Question Gen     | t5-small-qg-hl                |
+| Audio Processing | Librosa, SoundFile            |
+| PDF Generation   | ReportLab                     |
+| Backend          | Python                        |
 
 ---
 
@@ -75,32 +87,44 @@ streamlit run app.py
 ## 📋 How It Works
 - Upload a lecture audio file (.wav or .mp3)
 
-- The audio is transcribed into English text using Whisper
+- Whisper transcribes the speech into clean English text
 
-- Generate an AI-powered summary of the transcript
+- The transcript is processed to remove repetition/hallucination
 
-- Optionally translate the output into Hindi
+- A summary is generated using BART
 
-- Download the transcript or summary as a PDF
+- Questions are generated using T5
 
+- Output is displayed in Transcript / Summary / Questions tabs
+
+- User can download the entire content as a PDF
+- 
 ## 🌐 Deployment
-LetUNote AI is optimized for free-tier cloud deployment and runs successfully on Hugging Face Spaces (CPU)
+LetUNote AI is optimized for free-tier deployment and runs efficiently on:
+
+- Hugging Face Spaces (CPU)
+
+- Local machines (Windows/Mac/Linux)
+
+No GPU required.
 
 ## 🎓 Use Cases
-- Automated lecture note generation
+- Automated lecture note creation
 
-- Quick exam revision
+- Exam preparation
 
-- Audio-based learning accessibility
+- Fast revision tool
 
-- AI-assisted study material creation
+- Accessible learning for audio-based students
+
+- Creating study material from seminars & workshops
 
 ## ⚠️ Known Limitations
 - Best performance with clear English audio
 
-- Long audio files (>5 minutes) may take longer to process on free-tier CPU
+- Long/noisy audio may reduce accuracy
 
-- Currently supports WAV audio only for cloud compatibility
+- CPU processing may take longer for long lectures
 
 ## 🔮 Future Enhancements
 - Multilingual transcription and translation
