@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 # -------------------- PAGE CONFIG ----------------------------
 st.set_page_config(page_title="🎧 LetUNote AI", layout="wide")
 
-# ---------- LOAD MODELS (Whisper + Summarizer + QG) ----------
+# ---------- LOAD MODELS ----------
 @st.cache_resource
 def load_models():
     asr = pipeline(
@@ -32,17 +32,17 @@ def load_models():
     return asr, summarizer, qg
 
 
-asr_pipe, summarizer_pipe, qg_pipe = load_models()
+asr_pipe,summarizer_pipe,qg_pipe=load_models()
 
 # ------------------ CLEAN TEXT -------------------------------
 def clean_text(text):
-    # 1. Normalize whitespace
+    # Normalize whitespace
     text = re.sub(r"\s+", " ", text).strip()
 
-    # 2. Remove non-ASCII glitch characters
+    #Remove non-ASCII glitch characters
     text = re.sub(r"[^\x00-\x7F]+", " ", text)
 
-    # 3. Sentence segmentation
+    #Sentence segmentation
     sentences = re.split(r'(?<=[.!?])\s+', text)
 
     cleaned = []
@@ -51,11 +51,11 @@ def clean_text(text):
     for s in sentences:
         s_strip = s.strip()
 
-        # Skip empty or tiny fragments
+        #Skip empty or tiny fragments
         if len(s_strip) < 5:
             continue
 
-        # Skip repeated sentences
+        #Skip repeated sentences
         s_key = s_strip.lower()
         if s_key in seen:
             continue
@@ -65,15 +65,15 @@ def clean_text(text):
 
     text = " ".join(cleaned)
 
-    # 4. Remove repeated long phrases 
-    text = re.sub(
+    #Remove repeated long phrases 
+    text= re.sub(
         r'\b((?:\w+\s+){5,15}\w+)(?:\s+\1)+',
         r'\1',
         text,
         flags=re.IGNORECASE
     )
 
-    # 5. Remove medium-length repeated patterns 
+    #Remove medium-length repeated patterns 
     text = re.sub(
         r'\b((?:\w+\s+){3,8}\w+)(?:\s+\1)+',
         r'\1',
@@ -81,7 +81,7 @@ def clean_text(text):
         flags=re.IGNORECASE
     )
 
-    # 6. Remove repeated short patterns 
+    #Remove repeated short patterns 
     text = re.sub(
         r'\b((?:\w+\s+){1,3}\w+)(?:\s+\1)+',
         r'\1',
@@ -89,7 +89,7 @@ def clean_text(text):
         flags=re.IGNORECASE
     )
 
-    # 7. Remove repeated single words
+    #Remove repeated single words
     text = re.sub(r'\b(\w+)( \1\b)+', r'\1', text, flags=re.IGNORECASE)
 
     return text.strip()
@@ -187,7 +187,7 @@ for k in ["transcript", "summary", "questions"]:
 # -------------------- HEADER UI ------------------------------
 st.markdown("""
 <div style="background: linear-gradient(90deg,#00C4FF,#0066FF);
-padding:20px;border-radius:12px;text-align:center;color:white;">
+padding:25px;border-radius:15px;text-align:center;color:white;">
 <h2>🎧 LetUNote AI</h2>
 <p>Your AI-Powered Lecture Notes Generator</p>
 </div>
