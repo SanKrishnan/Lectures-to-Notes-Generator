@@ -1,158 +1,187 @@
----
-title: LetUNote AI
-emoji: 🎧
-colorFrom: blue
-colorTo: yellow
-sdk: streamlit
-sdk_version: "1.38.0"
-app_file: app.py
-pinned: false
----
-
 # 🎧 LetUNote AI
 
-An AI-powered lecture assistant that converts audio into study-ready notes, summaries & questions
+### AI-Powered Lecture Notes Assistant
 
-LetUNote AI is a web-based application that helps students and educators transform lecture recordings into clean transcripts, structured summaries, and exam-style questions — all exportable as a PDF. Powered by modern Speech-to-Text and NLP models, it makes studying easier and faster.
+LetUNote AI converts lecture audio into structured study material by generating:
+
+- 🎙️ English transcripts
+- 📘 Concise lecture summaries
+- ❓ Transcript-grounded study questions
+- 📄 Downloadable PDF notes
+
+It is designed to work with lectures across different subjects, including computer science, mathematics, science, business, and other academic topics.
+
+## 🌐 Live Demo
+
+**Hugging Face Space:**  
+https://huggingface.co/spaces/SanKrishnan/LetUNote_AI
+
+**GitHub Repository:**  
+https://github.com/SanKrishnan/Lectures-to-Notes-Generator
 
 ---
-
-🌐 **Live Demo:**  
-👉 https://huggingface.co/spaces/SanKrishnan/LetUNote_AI
 
 ## 🚀 Overview
 
-LetUNote AI streamlines the note-taking process by automatically generating learning material from lecture audio.
-Built with Streamlit and Hugging Face Transformers, the app converts spoken lectures into:
+LetUNote AI allows users to upload a lecture recording in WAV or MP3 format and automatically transform it into study-ready material.
 
-- Cleaned transcript (no repetitions or glitches)
+The application processes the **complete uploaded audio** and presents the results in three sections:
 
-- Concise AI-generated summary
+**Transcript**  
+The complete lecture is transcribed and translated into English.
 
-- Structured exam-style questions
+**Summary**  
+The transcript is processed across the lecture to produce concise, grounded summary points.
 
-- Downloadable formatted PDF
+**Questions**  
+Study questions are generated from concepts and explanations present in the transcript rather than from a fixed subject-specific question set.
 
-LetUNote AI enables students to focus on learning instead of manually writing notes.
+The generated transcript, summary, and questions can also be exported together as a PDF.
+
 ---
 
 ## ✨ Key Features
 
-- 🎤 Audio Transcription
-Converts WAV/MP3 lecture audio into readable text using OpenAI Whisper.
+### 🎤 Lecture Transcription
+- Supports WAV and MP3 audio
+- Processes the complete uploaded recording
+- Uses Faster-Whisper for speech recognition
+- Supports multilingual speech with English translation
+- Includes repetition cleanup
 
-- 📘 AI-Powered Summarization
-Generates clean, concise summaries using BART (facebook/bart-large-cnn).
+### 📘 Lecture Summarization
+- Uses the complete transcript
+- Processes longer lectures in chronological sections
+- Generates concise English summary points
+- Keeps summary content grounded in the lecture transcript
 
-- ❓ Automatic Question Generation
-Creates exam-style MCQ/short-answer style questions using T5 (valhalla/t5-small-qg-hl).
+### ❓ Study Question Generation
+- Uses the lecture transcript directly
+- Generates questions from concepts, explanations, relationships, comparisons, and other meaningful information present in the lecture
+- Designed to work across different academic subjects
+- Avoids hardcoded subject-specific questions
 
-= 📄 PDF Export
-Allows users to download transcript, summary, and questions in a polished PDF layout.
+### 📄 PDF Export
+Downloads the transcript, summary, and generated questions as a formatted PDF.
 
-- 🎨 Clean Streamlit UI
-Academic-friendly, responsive interface with tabs for Transcript, Summary, and Questions.
+### 🎨 Streamlit Interface
+- Simple academic-focused interface
+- Transcript, Summary, and Questions tabs
+- Upload and generate workflow
+- PDF download option
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category         | Technology                    |
-| ---------------- | ----------------------------- |
-| Frontend         | Streamlit                     |
-| Speech-to-Text   | OpenAI Whisper (Hugging Face) |
-| Summarization    | facebook/bart-large-cnn       |
-| Question Gen     | t5-small-qg-hl                |
-| Audio Processing | Librosa, SoundFile            |
-| PDF Generation   | ReportLab                     |
-| Backend          | Python                        |
+| Component | Technology |
+|---|---|
+| Frontend / UI | Streamlit |
+| Speech-to-Text | Faster-Whisper |
+| Speech Model | Whisper Base |
+| Summarization | `sshleifer/distilbart-cnn-6-6` |
+| Question Generation | Transcript-grounded rule-based extraction |
+| PDF Generation | ReportLab |
+| Programming Language | Python |
+| Deployment | Hugging Face Spaces |
 
 ---
+
+## 🔄 How It Works
+
+```text
+Lecture Audio
+     ↓
+Faster-Whisper
+     ↓
+Complete English Transcript
+     ↓
+ ┌───────────────┬────────────────┐
+ ↓               ↓                ↓
+Summary       Questions        Transcript
+ ↓               ↓                ↓
+        Study Material
+              ↓
+          PDF Export
+```
+## Processing Flow
+- Upload a WAV or MP3 lecture.
+- Faster-Whisper processes the complete recording.
+- Non-English speech can be translated into English.
+- The transcript is cleaned to reduce repeated text.
+- The complete transcript is divided into sections for summarization.
+- Summary points are checked against transcript content.
+- Meaningful questions are extracted from concepts and explanations in the transcript.
+- The transcript, summary, and questions are displayed in Streamlit.
+- The complete study material can be downloaded as a PDF.
+
 
 ## 📂 Project Structure
-```bash
-LetUNote_AI/
+```text
+Lectures-to-Notes-Generator/
 │
-├── app.py              # Main Streamlit application
-├── requirements.txt    # Project dependencies
-├── README.md           # Documentation
-└── .streamlit/         # Streamlit configuration (optional)
-
+├── app.py
+├── requirements.txt
+├── README.md
+├── LICENSE
+│
+├── .streamlit/
+│   └── config.toml
+│
+└── examples/
+    ├── Study_Material.pdf
+    └── Write it Right_Tricks of the Trade.mp3
 ```
----
+The examples/ directory contains a sample lecture input and its generated PDF output.
 
-## ⚡ Installation & Usage
-
-### Prerequisites
+## ⚡ Run Locally
+# Prerequisites
 - Python 3.10+
 - Git
 
-### Steps
+## Clone the repository
+- git clone https://github.com/SanKrishnan/Lectures-to-Notes-Generator.git
+- cd Lectures-to-Notes-Generator
+- Install dependencies
+- pip install -r requirements.txt
+- Start the application
+- streamlit run app.py
 
-```bash
-git clone https://github.com/SanKrishnan/LetUNote_AI.git
-cd LetUNote_AI
-pip install -r requirements.txt
-streamlit run app.py
-```
-## 📋 How It Works
-- Upload a lecture audio file (.wav or .mp3)
+The application will open in your browser through Streamlit.
 
-- Whisper transcribes the speech into clean English text
+## ☁️ Deployment
 
-- The transcript is processed to remove repetition/hallucination
+LetUNote AI is designed for deployment on Hugging Face Spaces using Streamlit.
 
-- A summary is generated using BART
+The application is designed to run on CPU and downloads the required models at runtime.
 
-- Questions are generated using T5
+Hugging Face Space
 
-- Output is displayed in Transcript / Summary / Questions tabs
-
-- User can download the entire content as a PDF
-- 
-## 🌐 Deployment
-LetUNote AI is optimized for free-tier deployment and runs efficiently on:
-
-- Hugging Face Spaces (CPU)
-
-- Local machines (Windows/Mac/Linux)
-
-No GPU required.
+# https://huggingface.co/spaces/SanKrishnan/LetUNote_AI
 
 ## 🎓 Use Cases
-- Automated lecture note creation
-
+- Lecture note generation
 - Exam preparation
+- Revision material creation
+- Seminar and workshop transcription
+- Study material generation from recorded lectures
+- Converting long lecture recordings into structured notes
 
-- Fast revision tool
-
-- Accessible learning for audio-based students
-
-- Creating study material from seminars & workshops
-
-## ⚠️ Known Limitations
-- Best performance with clear English audio
-
-- Long/noisy audio may reduce accuracy
-
-- CPU processing may take longer for long lectures
+## ⚠️ Limitations
+- Transcription quality depends on audio clarity.
+- Heavy background noise can reduce transcription accuracy.
+- CPU inference can take longer for long recordings.
+- Speech recognition may occasionally contain transcription errors.
+- Generated summaries and questions are grounded in the transcript, but model-generated content can still require human review.
 
 ## 🔮 Future Enhancements
-- Multilingual transcription and translation
-
 - Timestamped transcripts
-
-- Keyword extraction and topic highlighting
-
-- Enhanced quiz difficulty levels
-
-- Integration with Notion / Anki
-
+- Improved multilingual support
+- Topic and keyword extraction
+- Adjustable summary length
+- Multiple question difficulty levels
+- MCQ generation
+- Notion and Anki integration
 
 ## 👩‍💻 Author
 Sanjana Krishnan
-
-
-🔗 GitHub: https://github.com/SanKrishnan
-
-⭐ If you find this project helpful, consider giving it a star!
