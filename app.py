@@ -2,7 +2,8 @@ import os
 import re
 import streamlit as st
 import tempfile
-from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from faster_whisper import WhisperModel
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
@@ -90,7 +91,7 @@ html, body, [class*="css"] {
     padding: 20px;
     border-radius: 0 10px 10px 10px !important;
     border: 1px solid #582417;
-    color: #F5EDC4 !important;
+    color: #FFF7E6 !important;
 }
 /* ===== Text Styling ===== */
 h1 {
@@ -121,37 +122,22 @@ h2, h3, label, p {
 }
 </style>
 """, unsafe_allow_html=True)
-
-
 # ---------- LOAD MODELS ----------
 @st.cache_resource
-def load_models():
-    asr = pipeline(
-        "automatic-speech-recognition",
-        model="openai/whisper-base",
-        chunk_length_s=30,
-        return_timestamps=False
-    )
-
-    summarizer = pipeline(
-        "summarization", model="facebook/bart-large-cnn"
-    )
-
-    qg = pipeline(
-        "text2text-generation",
-        model="valhalla/t5-small-qg-hl"
-    )
-
-    return asr, summarizer, qg
-
-
-asr_pipe, summarizer_pipe, qg_pipe = load_models()
+def load_asr():
+    return WhisperModel("base",device="cpu",compute_type="int8",cpu_threads=2,num_workers=1)
+    
+@st.cache_resource
+def load_summarizer():
+    model_name = "sshleifer/distilbart-cnn-6-6"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    return tokenizer, model
 
 # ------------------ CLEAN TEXT -------------------------------
 def clean_text(text):
-    text = re.sub(r"\s+", " ", text).strip()
-    text = re.sub(r"[^\x00-\x7F]+", " ", text)
-    sentences = re.split(r'(?<=[.!?])\s+', text)
+    text = re.sub(r"\s+"," ",text).strip()
+    sentences = re.split(r'(?<=[.!?।])\s+',text)
     cleaned = []
     seen = set()
 
@@ -162,79 +148,189 @@ def clean_text(text):
         s_key = s_strip.lower()
         if s_key in seen:
             continue
-
         seen.add(s_key)
         cleaned.append(s_strip)
 
     text = " ".join(cleaned)
-
-    text = re.sub(
-        r'\b((?:\w+\s+){5,15}\w+)(?:\s+\1)+',
-        r'\1', text, flags=re.IGNORECASE
-    )
-    text = re.sub(
-        r'\b((?:\w+\s+){3,8}\w+)(?:\s+\1)+',
-        r'\1', text, flags=re.IGNORECASE
-    )
-    text = re.sub(
-        r'\b((?:\w+\s+){1,3}\w+)(?:\s+\1)+',
-        r'\1', text, flags=re.IGNORECASE
-    )
-    text = re.sub(
-        r'\b(\w+)( \1\b)+', r'\1', text, flags=re.IGNORECASE
-    )
+    text = re.sub(r'\b((?:\w+\s+){5,15}\w+)(?:\s+\1)+',r'\1',text,flags=re.IGNORECASE)
+    text = re.sub(r'\b((?:\w+\s+){3,8}\w+)(?:\s+\1)+',r'\1',text,flags=re.IGNORECASE)
+    text = re.sub(r'\b((?:\w+\s+){1,3}\w+)(?:\s+\1)+',r'\1',text,flags=re.IGNORECASE)
+    text = re.sub(r'\b(\w+)( \1\b)+',r'\1',text,flags=re.IGNORECASE)
 
     return text.strip()
-
 # ---------------------- TRANSCRIBE AUDIO ---------------------
 def process_audio(audio):
+    asr_model = load_asr()
     ext = audio.name.split(".")[-1]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
+
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=f".{ext}"
+    ) as tmp:
         tmp.write(audio.read())
         path = tmp.name
 
-    with st.spinner("Transcribing with Whisper Base..."):
-        result = asr_pipe(path)
+    try:
+        with st.spinner("Transcribing..."):
+            segments, info = asr_model.transcribe(
+                path,
+                beam_size=1,
+                vad_filter=True,
+                condition_on_previous_text=False
+            )
 
-    os.remove(path)
-
-    text = clean_text(result.get("text", "").strip())
-    if not text:
-        raise RuntimeError("Whisper returned empty transcript.")
-
-    return text
-
+            text = " ".join(
+                segment.text.strip()
+                for segment in segments
+                if segment.text.strip()
+            )
+        text = clean_text(text)
+        if not text:
+            raise RuntimeError("Whisper returned empty transcript.")
+        return text
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
 # ------------------------ SUMMARY ----------------------------
 def generate_summary(text):
-    text = text[:1024]
-    with st.spinner("Generating Summary..."):
-        summ = summarizer_pipe(
-            text,
-            max_length=200,
-            min_length=70,
-            do_sample=False
-        )[0]["summary_text"]
+    tokenizer, model = load_summarizer()
 
-    bullet_summary = "### Summary\n"
-    for line in summ.split(". "):
-        if line.strip():
-            bullet_summary += f"- {line.strip()}\n"
-    return bullet_summary
+    sentences = re.split(r'(?<=[.!?।])\s+',text)
+    chunks = []
 
+    current = ""
+
+    for sentence in sentences:
+        if len(current) + len(sentence) > 900:
+            if current:
+                chunks.append(current)
+            current = sentence
+        else:
+            current += " " + sentence
+
+    if current:
+        chunks.append(current)
+
+    summaries = []
+
+    with st.spinner("Generating English Summary..."):
+        for chunk in chunks:
+            inputs = tokenizer(
+                chunk,
+                return_tensors="pt",
+                max_length=512,
+                truncation=True
+            )
+
+            summary_ids = model.generate(
+                inputs["input_ids"],
+                max_new_tokens=80,
+                min_new_tokens=15,
+                num_beams=1,
+                no_repeat_ngram_size=3,
+                repetition_penalty=1.15,
+                do_sample=False
+            )
+
+            summary = tokenizer.decode(
+                summary_ids[0],
+                skip_special_tokens=True
+            ).strip()
+
+            if summary:
+                summaries.append(summary)
+
+    return "### Summary\n" + "\n".join(
+        f"- {s}" for s in summaries
+    )
 # -------------------- QUESTIONS ------------------------------
 def generate_questions(text):
-    cut = text[:700]
-    highlight = f"highlight: {cut}"
+    sentences = re.split(r'(?<=[.!?।])\s+',text)
+    sentences = [
+        s.strip() for s in sentences
+        if 10 <= len(s.strip().split()) <= 40
+    ]
 
-    with st.spinner("❓ Generating Questions..."):
-        raw = qg_pipe(highlight)[0]["generated_text"]
+    if not sentences:
+        return "### Questions\n- No clear questions could be generated."
 
-    qs = "### ❓ Questions\n"
-    for q in raw.split("?"):
-        if q.strip():
-            qs += f"- {q.strip()}?\n"
-    return qs
+    stopwords = {
+        "the","a","an","is","are","was","were","be","been","being",
+        "to","of","and","or","in","on","for","with","from","that",
+        "this","these","those","we","you","they","it","he","she",
+        "will","can","could","would","should","have","has","had",
+        "do","does","did","as","at","by","about","into","then",
+        "so","if","than","also","just","very","there","here"
+    }
 
+    scored = []
+
+    for index,sentence in enumerate(sentences):
+        words = re.findall(
+            r'[\w\u0900-\u097F]{3,}',
+            sentence.lower()
+        )
+
+        content_words = [
+            w for w in words
+            if w not in stopwords
+        ]
+
+        if len(content_words) < 4:
+            continue
+
+        unique_words = len(set(content_words))
+        score = unique_words + min(len(content_words),10) * 0.5
+
+        scored.append((score,index,sentence))
+
+    if not scored:
+        return "### Questions\n- No clear questions could be generated."
+
+    # Divide the complete transcript into sections
+    selected = []
+    total = len(sentences)
+    sections = min(5,total)
+
+    for section in range(sections):
+        start = section * total // sections
+        end = (section + 1) * total // sections
+
+        candidates = [
+            item for item in scored
+            if start <= item[1] < end
+        ]
+
+        if candidates:
+            selected.append(max(candidates,key=lambda x:x[0]))
+
+    selected.sort(key=lambda x:x[1])
+
+    questions = []
+
+    for _,_,sentence in selected:
+        words = sentence.split()
+
+        # Use the main concept from the sentence
+        content = [
+            w for w in words
+            if w.lower().strip(".,!?()")
+            not in stopwords
+        ]
+
+        if not content:
+            continue
+
+        concept = " ".join(content[:4])
+
+        question = f"What is the role or purpose of {concept}?"
+
+        if question not in questions:
+            questions.append(question)
+
+    return "### Questions\n" + "\n".join(
+        f"- {q}" for q in questions[:5]
+    )
 # ---------------------- PDF CREATION -------------------------
 def create_pdf(transcript, summary, questions):
     filename = "LetUNote_Notes.pdf"
@@ -276,7 +372,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
 # ------------------------ MAIN LAYOUT ------------------------
 col1, col2 = st.columns([2, 3])
 
@@ -295,14 +390,19 @@ with col1:
         if not file:
             st.error("Please upload a file.")
             st.stop()
-
-        st.session_state.transcript = process_audio(file)
-        st.session_state.summary = generate_summary(st.session_state.transcript)
-        st.session_state.questions = generate_questions(st.session_state.transcript)
-        st.success("Notes generated successfully!")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    
+        try:
+            st.session_state.transcript = process_audio(file)
+            st.session_state.summary = generate_summary(
+                st.session_state.transcript
+            )
+            st.session_state.questions = generate_questions(
+                st.session_state.transcript
+            )
+            st.success("Notes generated successfully!")
+    
+        except Exception as e:
+            st.error(f"Error while generating notes: {e}")
 
 # ------------------------ RIGHT SIDE -----------------------
 with col2:
@@ -331,9 +431,8 @@ with col2:
             st.download_button(
                 "Download PDF",
                 f,
-                file_name="LetUNote_Content.pdf"
+                file_name="Study_Material.pdf"
             )
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # FOOTER
 st.markdown("""<br><center style="color:#37627B; font-weight:600;">
