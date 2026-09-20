@@ -157,7 +157,7 @@ The application is designed to run on CPU and downloads the required models at r
 
 Hugging Face Space
 
-# https://huggingface.co/spaces/SanKrishnan/LetUNote_AI
+https://huggingface.co/spaces/SanKrishnan/LetUNote_AI
 
 ## 🎓 Use Cases
 - Lecture note generation
